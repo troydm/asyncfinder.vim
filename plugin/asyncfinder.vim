@@ -269,10 +269,13 @@ def AsyncSearch(pattern,buf_list, mru_file,ignore_dirs,ignore_files):
     glob = AsyncGlobber(output)
     glob.ignore_dirs = eval(ignore_dirs)
     glob.ignore_files = eval(ignore_files)
-    if not '*' in (pattern.split(os.path.sep)[-1]):
-        pattern = pattern+'*'
-    if not ('.' in pattern or '/' in pattern):
-        pattern = '*'+pattern
+    pattern = pattern.split(os.path.sep)
+    if not glob.has_magic(pattern[-1]):
+        if len(pattern[-1]) > 0:
+            pattern[-1] = '*'+pattern[-1]+'*'
+        else:
+            pattern[-1] = '*'
+    pattern = os.path.sep.join(pattern)
     glob.glob_buffers(buf_list,pattern)
     glob.glob('.',pattern)
     if len(mru_file) > 0:
