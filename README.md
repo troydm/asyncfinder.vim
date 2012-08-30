@@ -7,8 +7,12 @@ background thread so your vim won't get stuck and you won't get frustuated by wa
 results. It's quite similar to FuzzyFinder, ku, ctrl-p and unite.vim and inspired by those
 plugins but is much more simple in it's functionality.
 
+screenshot
+----------
+![image](http://i.imgur.com/43Iq1.png)
+
 usage
-=====
+-----
 
     :AsyncFinder
 
