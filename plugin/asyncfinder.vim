@@ -1,6 +1,6 @@
 " asyncfinder.vim - simple asynchronous fuzzy file finder for vim
 " Maintainer: Dmitry "troydm" Geurkov <d.geurkov@gmail.com>
-" Version: 0.2
+" Version: 0.2.1
 " Description: asyncfinder.vim is a simple asychronous fuzzy file finder
 " that searches for files in background without making you frustuated 
 " Last Change: 30 August, 2012
@@ -143,7 +143,8 @@ class AsyncGlobber:
             if mru != None:
                 mru = mru.strip() 
                 if self.fnmatch(mru,pattern):
-                    self.addMruFile(mru)
+                    if not self.fnmatch_list(mru,self.ignore_files):
+                        self.addMruFile(mru)
 
     def glob(self,dir,pattern):
         self.dir = dir
@@ -265,12 +266,12 @@ def AsyncSearch(pattern,buf_list, mru_file,ignore_dirs,ignore_files):
     glob = AsyncGlobber(output)
     glob.ignore_dirs = eval(ignore_dirs)
     glob.ignore_files = eval(ignore_files)
-    if not glob.has_magic(pattern):
-        if not ('.' in pattern or '/' in pattern):
-            pattern = '*'+pattern
-    if pattern[-1] != '*':
+    if not '*' in (pattern.split(os.path.sep)[-1]):
         pattern = pattern+'*'
+    if not ('.' in pattern or '/' in pattern):
+        pattern = '*'+pattern
     glob.glob_buffers(buf_list,pattern)
+    glob.glob('.',pattern)
     if len(mru_file) > 0:
         try:
             m = open(mru_file)
@@ -279,7 +280,6 @@ def AsyncSearch(pattern,buf_list, mru_file,ignore_dirs,ignore_files):
             glob.glob_mru_files(mru_list,pattern)
         except IOError:
             pass
-    glob.glob('.',pattern)
     output.exit()
 
 def AsyncCancel():
