@@ -1,7 +1,7 @@
 asyncfinder.vim for Vim version 7.0+   Last change: 30 August, 2012
 
 Maintainer: Dmitry "troydm" Geurkov <d.geurkov@gmail.com>
-Version: 0.1
+Version: 0.2
 Description: asyncfinder.vim is a simple asychronous fuzzy file finder
 that searches for files in background without making you frustuated 
 Last Change: 30 August, 2012
@@ -30,6 +30,7 @@ Platform:
 
 Requirements: 
     vim compiled with python support
+    (optional) |MRU| plugin if you want to match most recently used files
 
 ============================================================================================
  2. CONFIGURATION                                        *asyncfinder.vim-configuration*
@@ -51,7 +52,12 @@ g:asyncfinder_initial_pattern    (Default: "*")
 
                                                          *g:asyncfinder_include_buffers*
 g:asyncfinder_include_buffers    (Default: "1")
-    Match not only files in filesystem, but files in buffers too
+    Enable matching file buffers
+
+                                                         *g:asyncfinder_include_mru_files*
+g:asyncfinder_include_mru_files    (Default: "1")
+    Enable matching most recently used files
+    Note: this option is automaticly disabled if you don't have |MRU| plugin
 
                                                          *g:asyncfinder_edit_file_on_single_result*
 g:asyncfinder_edit_file_on_single_result    (Default: "1")
@@ -73,12 +79,12 @@ g:asyncfinder_edit_file_on_single_result    (Default: "1")
     searches for files the first line is "Searching for files...". When
     asyncfinder finished searching it reads as "Type your pattern"
     Results are shown under '> ' pattern prompt (second line)
-    Each matched result on a seperate line starting with d, f or b letters
-    Directories start with d prefix, files with f and buffers with b
-    To edit files or buffers just move your cursor over the line and press <Enter>
-    If <Enter> is pressed over a directory it replaces the pattern to this directory name 
-    If first result is directory and <Enter> is pressed while cursor is in command prompt
-    replaces the pattern to first result directory name 
+    Each matched result is on a seperate line starting with d, f, m or b letters
+    Directories start with d prefix, files with f, most recently used files
+    with m and buffers with b. To edit files or buffers just move your cursor over the line 
+    and press <Enter>. If <Enter> is pressed over a directory it replaces the pattern to 
+    this directory name. If first result is directory and <Enter> is pressed while cursor is 
+    in command prompt replaces the pattern to first result directory name 
     To close result window just kill the buffer using |:bd| or press <C-q>
 
  vim:tw=78:ts=8:ft=help:norl:

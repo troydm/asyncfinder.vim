@@ -1,6 +1,6 @@
 " asyncfinder.vim - simple asynchronous fuzzy file finder for vim
 " Maintainer: Dmitry "troydm" Geurkov <d.geurkov@gmail.com>
-" Version: 0.1
+" Version: 0.2
 " Description: asyncfinder.vim is a simple asychronous fuzzy file finder
 " that searches for files in background without making you frustuated 
 " Last Change: 30 August, 2012
@@ -29,6 +29,10 @@ endif
 
 if !exists("g:asyncfinder_include_buffers")
     let g:asyncfinder_include_buffers = 1
+endif
+
+if !exists("g:asyncfinder_include_mru_files")
+    let g:asyncfinder_include_mru_files = 1
 endif
 
 if !exists("g:asyncfinder_edit_file_on_single_result")
@@ -84,6 +88,7 @@ class AsyncGlobber:
         self.ignore_dirs = []
         self.ignore_files = []
         self.buffers = []
+        self.cwd = os.getcwd()
 
     def addDir(self,p):
         if p.startswith(self.dir+os.path.sep):
@@ -100,6 +105,12 @@ class AsyncGlobber:
     def addBuffer(self,p):
         self.output.append("b "+p)
         self.buffers.append(p)
+
+    def addMruFile(self,p):
+        if p.startswith(self.cwd): 
+            p = p[len(self.cwd)+1:]
+        if not p in self.buffers:
+            self.output.append("m "+p)
 
     def fnmatch(self,f,p):
         if self.case_sensitive:
@@ -123,6 +134,16 @@ class AsyncGlobber:
         for buf in buffers:
             if buf != None and self.fnmatch(buf,pattern):
                 self.addBuffer(buf)
+
+    def glob_mru_files(self,mru_list,pattern):
+        if mru_list == None:
+            return
+        pattern = '*'.join(pattern.split('**'))
+        for mru in mru_list:
+            if mru != None:
+                mru = mru.strip() 
+                if self.fnmatch(mru,pattern):
+                    self.addMruFile(mru)
 
     def glob(self,dir,pattern):
         self.dir = dir
@@ -215,7 +236,10 @@ def AsyncRefresh():
                 buf_list = vim.eval("map(filter(range(1,bufnr(\"$\")), \"buflisted(v:val)\"),\"bufname(v:val)\")")
             else:
                 buf_list = []
-            t = threading.Thread(target=AsyncSearch, args=(pattern,buf_list,ignore_dirs,ignore_files,))
+            mru_file = ""
+            if vim.eval("g:asyncfinder_include_mru_files") == "1" and vim.eval("exists('MRU_File')") == "1":
+                mru_file = vim.eval("MRU_File")
+            t = threading.Thread(target=AsyncSearch, args=(pattern,buf_list,mru_file,ignore_dirs,ignore_files,))
             t.daemon = True
             t.start()
     else:
@@ -235,7 +259,7 @@ def AsyncRefresh():
         if len(output) > 0:
             vim.current.buffer.append(output)
 
-def AsyncSearch(pattern,buf_list,ignore_dirs,ignore_files):
+def AsyncSearch(pattern,buf_list, mru_file,ignore_dirs,ignore_files):
     global async_output
     output = async_output
     glob = AsyncGlobber(output)
@@ -247,6 +271,14 @@ def AsyncSearch(pattern,buf_list,ignore_dirs,ignore_files):
     if pattern[-1] != '*':
         pattern = pattern+'*'
     glob.glob_buffers(buf_list,pattern)
+    if len(mru_file) > 0:
+        try:
+            m = open(mru_file)
+            mru_list = m.readlines()[1:]
+            m.close()
+            glob.glob_mru_files(mru_list,pattern)
+        except IOError:
+            pass
     glob.glob('.',pattern)
     output.exit()
 
@@ -281,7 +313,7 @@ function! s:Edit()
             call feedkeys("ggjA")
             call s:Clear()
         endif
-        if (f[0] == 'f' || f[0] == 'b') && f[1] == ' ' 
+        if (f[0] == 'f' || f[0] == 'b' || f[0] == 'm') && f[1] == ' ' 
             silent! bd!
             exe ':e '.f[2:]
         endif
@@ -308,7 +340,7 @@ function! s:EnterPressed()
                 call s:Clear()
                 return
             endif
-            if g:asyncfinder_edit_file_on_single_result && (t[0] == 'f' || t[0] == 'b')
+            if g:asyncfinder_edit_file_on_single_result && (t[0] == 'f' || t[0] == 'b' || t[0] == 'm')
                 if line('$') == 3
                     call s:Edit()
                     return
