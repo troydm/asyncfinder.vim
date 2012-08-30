@@ -9,7 +9,7 @@ plugins but is much more simple in it's functionality.
 
 screenshot
 ----------
-![image](http://i.imgur.com/DP2ji.png)
+![image](http://i.imgur.com/6lBlh.png)
 
 usage
 -----
