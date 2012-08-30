@@ -88,19 +88,22 @@ class AsyncGlobber:
         self.ignore_dirs = []
         self.ignore_files = []
         self.buffers = []
-        self.cwd = os.getcwd()
+        self.files = []
+        self.cwd = os.getcwd()+os.path.sep
 
     def addDir(self,p):
         if p.startswith(self.dir+os.path.sep):
             p = p[len(self.dir+os.path.sep):] 
         if not p in self.buffers:
             self.output.append("d "+p)
+            self.files.append(p)
 
     def addFile(self,p):
         if p.startswith(self.dir+os.path.sep):
             p = p[len(self.dir+os.path.sep):] 
         if not p in self.buffers:
             self.output.append("f "+p)
+            self.files.append(p)
 
     def addBuffer(self,p):
         self.output.append("b "+p)
@@ -108,8 +111,8 @@ class AsyncGlobber:
 
     def addMruFile(self,p):
         if p.startswith(self.cwd): 
-            p = p[len(self.cwd)+1:]
-        if not p in self.buffers:
+            p = p[len(self.cwd):]
+        if (not p in self.buffers) and (not p in self.files):
             self.output.append("m "+p)
 
     def fnmatch(self,f,p):
