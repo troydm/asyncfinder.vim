@@ -1,0 +1,84 @@
+asyncfinder.vim for Vim version 7.0+   Last change: 30 August, 2012
+
+Maintainer: Dmitry "troydm" Geurkov <d.geurkov@gmail.com>
+Version: 0.1
+Description: asyncfinder.vim is a simple asychronous fuzzy file finder
+that searches for files in background without making you frustuated 
+Last Change: 30 August, 2012
+License: Vim License (see :help license)
+Website: https://github.com/troydm/asyncfinder.vim
+
+Help on using asyncfinder.vim                                     *asyncfinder.vim*
+
+1. Introduction                    |asyncfinder.vim-intro|
+2. Configuration                   |asyncfinder.vim-configuration|
+2. Usage                           |asyncfinder.vim-usage|
+
+============================================================================================
+ 1. INTRODUCTION                                                  *asyncfinder.vim-intro*
+
+asyncfinder.vim - simple asynchronous fuzzy file finder for vim that won't make you wait 
+for results evar! EVAR! It uses python's threading module and does pattern matching in
+background thread so your vim won't get stuck and you won't get frustuated by waiting for 
+results. It's quite similar to FuzzyFinder, ku, ctrl-p and unite.vim and inspired by those
+plugins but is much more simple in it's functionality.
+
+Note: this plugin is highly experimental, so it might make your vim process unstable
+
+Platform: 
+    only unix based operating systems are supported
+
+Requirements: 
+    vim compiled with python support
+
+============================================================================================
+ 2. CONFIGURATION                                        *asyncfinder.vim-configuration*
+
+                                                         *g:asyncfinder_ignore_dirs*
+g:asyncfinder_ignore_dirs     (Default: "['*.AppleDouble*','*.git*','*.hg*','*.bzr*']")
+    Ignore directories defined in this list when pattern matching files
+    It also ignores those directories content including sub directories and files
+    Use python's syntax to add additional directories to this list
+
+                                                         *g:asyncfinder_ignore_files*
+g:asyncfinder_ignore_files    (Default: "['*.swp']")
+    Ignore files defined in this list when pattern matching
+    Use python's syntax to add additional files to this list
+
+                                                         *g:asyncfinder_initial_pattern*
+g:asyncfinder_initial_pattern    (Default: "*")
+    Initial pattern match that is executed the moment asyncfinder window opens
+
+                                                         *g:asyncfinder_include_buffers*
+g:asyncfinder_include_buffers    (Default: "1")
+    Match not only files in filesystem, but files in buffers too
+
+                                                         *g:asyncfinder_edit_file_on_single_result*
+g:asyncfinder_edit_file_on_single_result    (Default: "1")
+    When enabled and if only one result is returned and enter pressed start editing this file
+
+============================================================================================
+ 2. USAGE                                                         *asyncfinder.vim-usage*
+
+                                                                  *AsyncFinder*
+:AsyncFinder
+    Open new window and start searching for files, use |glob()| like pattern for matching files 
+    and ** pattern to do recursive matching in sub-directories
+    Examples:
+        **/*.vim - will match all .vim script files in all sub-directories
+        *.vim    - will match all .vim script files in current directory
+        v        - will match all files that have v in it's name in current directory
+    Each time you start typing your pattern asyncfinder starts searching for files in
+    background while showing it's status on first line. When asyncfinder
+    searches for files the first line is "Searching for files...". When
+    asyncfinder finished searching it reads as "Type your pattern"
+    Results are shown under '> ' pattern prompt (second line)
+    Each matched result on a seperate line starting with d, f or b letters
+    Directories start with d prefix, files with f and buffers with b
+    To edit files or buffers just move your cursor over the line and press <Enter>
+    If <Enter> is pressed over a directory it replaces the pattern to this directory name 
+    If first result is directory and <Enter> is pressed while cursor is in command prompt
+    replaces the pattern to first result directory name 
+    To close result window just kill the buffer using |:bd| or press <C-q>
+
+ vim:tw=78:ts=8:ft=help:norl:
