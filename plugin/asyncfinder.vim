@@ -1,6 +1,6 @@
 " asyncfinder.vim - simple asynchronous fuzzy file finder for vim
 " Maintainer: Dmitry "troydm" Geurkov <d.geurkov@gmail.com>
-" Version: 0.2.2
+" Version: 0.2.3
 " Description: asyncfinder.vim is a simple asychronous fuzzy file finder
 " that searches for files in background without making you frustuated 
 " Last Change: 31 August, 2012
@@ -315,6 +315,9 @@ function! s:Clear()
         3,$delete
     endif
 endfunction
+function! s:ClearPrompt()
+    call setline(2,'>  ')
+endfunction
 function! s:Edit()
     let f = ''
     let p = getpos('.')
@@ -407,14 +410,14 @@ function! s:PositionCursor()
         normal ggjA
     endif
 endfunction
-function! s:OpenWindow()
+function! s:OpenWindow(pattern)
     let winnr = bufwinnr('^asyncfinder$')
     if winnr < 0
         execute &lines/3 . 'sp asyncfinder'
         setlocal filetype=asyncfinder buftype=nofile bufhidden=wipe nobuflisted noswapfile nowrap
         call setbufvar("%","prevupdatetime",&updatetime)
         call setline(1, 'Type your pattern')
-        call append(1, '>  ')
+        call s:ClearPrompt()
         set updatetime=500
         au BufEnter <buffer> set updatetime=500
         au BufWipeout <buffer> python AsyncCancel()
@@ -430,15 +433,26 @@ function! s:OpenWindow()
         nnoremap <buffer> <Del> :call <SID>DelPressed()<CR>
         inoremap <buffer> <C-q> <ESC>:silent! bd! \| echo<CR>
         startinsert
+        if !empty(a:pattern)
+            call feedkeys(a:pattern)
+            python AsyncRefreshI()
+            return
+        endif
         if !empty(g:asyncfinder_initial_pattern)
             call feedkeys(g:asyncfinder_initial_pattern)
             python AsyncRefreshI()
         endif
     else
         exe winnr . 'wincmd w'
+        call s:ClearPrompt()
         normal gg
         startinsert
+        if !empty(a:pattern)
+            call feedkeys(a:pattern)
+            python AsyncRefreshI()
+            return
+        endif
     endif
 endfunction
 
-command! AsyncFinder call s:OpenWindow() 
+command! -nargs=* -complete=file AsyncFinder call s:OpenWindow(<q-args>) 

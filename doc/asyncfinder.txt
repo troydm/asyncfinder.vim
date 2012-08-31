@@ -1,7 +1,7 @@
 asyncfinder.vim for Vim version 7.0+   Last change: 31 August, 2012
 
 Maintainer: Dmitry "troydm" Geurkov <d.geurkov@gmail.com>
-Version: 0.2.2
+Version: 0.2.3
 Description: asyncfinder.vim is a simple asychronous fuzzy file finder
 that searches for files in background without making you frustuated 
 Last Change: 31 August, 2012
@@ -67,7 +67,7 @@ g:asyncfinder_edit_file_on_single_result    (Default: "1")
  2. USAGE                                                         *asyncfinder.vim-usage*
 
                                                                   *AsyncFinder*
-:AsyncFinder
+:AsyncFinder [pattern]
     Open new window and start searching for files, use |glob()| like pattern for matching files 
     and ** pattern to do recursive matching in sub-directories
     Examples:
