@@ -26,7 +26,8 @@ plugins but is much more simple in it's functionality.
 Note: this plugin is highly experimental, so it might make your vim process unstable
 
 Platform: 
-    only unix based operating systems are supported
+    only unix based operating systems are supported, some people say it works
+    on windows based operating systems too but i haven't tested it
 
 Requirements: 
     vim compiled with python support
