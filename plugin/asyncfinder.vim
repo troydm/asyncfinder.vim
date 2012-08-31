@@ -266,6 +266,8 @@ def AsyncRefresh():
 def AsyncSearch(pattern,buf_list, mru_file,ignore_dirs,ignore_files):
     global async_output
     output = async_output
+    if output.toExit():
+        return
     glob = AsyncGlobber(output)
     glob.ignore_dirs = eval(ignore_dirs)
     glob.ignore_files = eval(ignore_files)
@@ -277,12 +279,16 @@ def AsyncSearch(pattern,buf_list, mru_file,ignore_dirs,ignore_files):
             pattern[-1] = '*'
     pattern = os.path.sep.join(pattern)
     glob.glob_buffers(buf_list,pattern)
+    if output.toExit():
+        return
     glob.glob('.',pattern)
     if len(mru_file) > 0:
         try:
             m = open(mru_file)
             mru_list = m.readlines()[1:]
             m.close()
+            if output.toExit():
+                return
             glob.glob_mru_files(mru_list,pattern)
         except IOError:
             pass

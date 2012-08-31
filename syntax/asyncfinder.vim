@@ -21,9 +21,13 @@ syntax match AsyncFinderTitle /^Type your pattern$/
 syntax match AsyncFinderTitle /^Searching for files\.*$/
 syntax match AsyncFinderPattern /^>.*$/
 syntax match AsyncFinderDir /^d .*$/
-syntax match AsyncFinderFile /^f .*$/
-syntax match AsyncFinderMruFile /^m .*$/
-syntax match AsyncFinderBuffer /^b .*$/
+syntax match AsyncFinderFile /^f /
+syntax match AsyncFinderFile /^\zsf .*\/\ze[^\/]\+$/
+syntax match AsyncFinderMruFile /^m /
+syntax match AsyncFinderMruFile /^\zsm .*\/\ze[^\/]\+$/
+syntax match AsyncFinderBuffer /^b /
+syntax match AsyncFinderBuffer /^\zsb .*\/\ze[^\/]\+$/
+syntax match AsyncFinderFileName /[^ \/]\+$/
 
 highlight default link AsyncFinderTitle    Comment
 highlight default link AsyncFinderPattern  Title
@@ -31,6 +35,7 @@ highlight default link AsyncFinderDir      Identifier
 highlight default link AsyncFinderFile     Character
 highlight default link AsyncFinderMruFile  Type
 highlight default link AsyncFinderBuffer   String
+highlight default link AsyncFinderFileName Normal
 
 let b:current_syntax = "asyncfinder"
 
