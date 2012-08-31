@@ -106,6 +106,8 @@ class AsyncGlobber:
             self.files.append(p)
 
     def addBuffer(self,p):
+        if p.startswith(self.cwd): 
+            p = p[len(self.cwd):]
         self.output.append("b "+p)
         self.buffers.append(p)
 
@@ -173,6 +175,8 @@ class AsyncGlobber:
                     rec_index = pi
         pre = pattern[:mag_index]
         post = pattern[mag_index:]
+        if len(pre) > 0 and pre[0] == '':
+            pre.insert(0,'')
         pre = os.path.sep.join(pre)
         if len(pre) > 0:
             if dir != '.':
@@ -180,9 +184,13 @@ class AsyncGlobber:
         else:
             pre = dir
         post = os.path.sep.join(post)
-        self.walk(pre,pre+os.path.sep+post,rec_index != None)
+        post = pre+os.path.sep+post
+        # normalize path removing double //
+        pre = pre.replace(os.path.sep+os.path.sep,os.path.sep)
+        post = post.replace(os.path.sep+os.path.sep,os.path.sep)
+        self.walk(pre,post,rec_index != None)
 
-    def walk(self,dir,pattern, recurse=True):
+    def walk(self,dir, pattern, recurse=True):
         for root, dirs, files in os.walk(dir):
             if self.output.toExit():
                 break
