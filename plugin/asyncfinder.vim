@@ -263,9 +263,11 @@ def AsyncRefresh():
             async_output = None
     running = async_output != None and not async_output.toExit()
     if running:
-        vim.current.buffer[0] = 'Searching for files'+('.'*random.randint(1,3))
+        dots = '.'*random.randint(1,3)
+        dots = dots+' '*(3-len(dots))
+        vim.current.buffer[0] = 'Searching for files'+dots+' (cwd: '+os.getcwd()+')'
     else:
-        vim.current.buffer[0] = 'Type your pattern' 
+        vim.current.buffer[0] = 'Type your pattern (cwd: '+os.getcwd()+')' 
     if async_output != None:
         output = async_output.get()
         if len(output) > 0:
@@ -416,7 +418,7 @@ function! s:OpenWindow(pattern)
         execute &lines/3 . 'sp asyncfinder'
         setlocal filetype=asyncfinder buftype=nofile bufhidden=wipe nobuflisted noswapfile nowrap
         call setbufvar("%","prevupdatetime",&updatetime)
-        call setline(1, 'Type your pattern')
+        call setline(1, 'Type your pattern (cwd: '.getcwd().')')
         call s:ClearPrompt()
         set updatetime=500
         au BufEnter <buffer> set updatetime=500

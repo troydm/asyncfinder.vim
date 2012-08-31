@@ -17,8 +17,8 @@ endif
 let s:save_cpo = &cpo
 set cpo&vim
 
-syntax match AsyncFinderTitle /^Type your pattern$/ 
-syntax match AsyncFinderTitle /^Searching for files\.*$/
+syntax match AsyncFinderTitle /^Type your pattern.*$/ 
+syntax match AsyncFinderTitle /^Searching for files.*$/
 syntax match AsyncFinderPattern /^>.*$/
 syntax match AsyncFinderDir /^d .*$/
 syntax match AsyncFinderFile /^f /
