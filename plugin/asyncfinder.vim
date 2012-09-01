@@ -213,7 +213,8 @@ def AsyncRefreshN():
 
 def AsyncRefreshI():
     AsyncRefresh()
-    vim.command("call feedkeys(\"\<C-o>f\<ESC>\")")
+    vim.command("call <SID>MoveCursorI()")
+
 
 def AsyncRefresh():
     global async_pattern, async_output
@@ -312,6 +313,14 @@ def AsyncCancel():
         async_output = None
 
 EOF
+
+function! s:MoveCursorI()
+    if col('.') == 1
+        call feedkeys("\<Right>\<Left>")
+    else
+        call feedkeys("\<Left>\<Right>")
+    endif
+endfunction
 function! s:Clear()
     if line('$') > 2
         3,$delete
