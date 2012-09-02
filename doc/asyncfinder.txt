@@ -85,8 +85,8 @@ g:asyncfinder_edit_file_on_single_result    (Default: "1")
     f - only files and m - most recently used files. 
     Each time you start typing your {pattern} asyncfinder starts searching for files in
     background while showing it's status on first line. When asyncfinder
-    searches for files the first line reads as "Searching for files...". When
-    asyncfinder finished searching it reads as "Type your pattern"
+    searches for files the first line reads as "Searching files...". 
+    When asyncfinder finished searching it reads as "Type your pattern"
     You can switch search {mode} by pressing <C-f>
     If command [-mode=] option is specified asyncfinder is started in specified {mode} otherwise 
     it uses global |g:asyncfinder_initial_mode| variable
