@@ -1,10 +1,10 @@
-asyncfinder.vim for Vim version 7.0+   Last change: 1 September, 2012
+asyncfinder.vim for Vim version 7.0+   Last change: 3 September, 2012
 
 Maintainer: Dmitry "troydm" Geurkov <d.geurkov@gmail.com>
-Version: 0.2.4
+Version: 0.2.5
 Description: asyncfinder.vim is a simple asychronous fuzzy file finder
 that searches for files in background without making you frustuated 
-Last Change: 1 September, 2012
+Last Change: 3 September, 2012
 License: Vim License (see :help license)
 Website: https://github.com/troydm/asyncfinder.vim
 
@@ -73,13 +73,14 @@ g:asyncfinder_edit_file_on_single_result    (Default: "1")
  2. USAGE                                                         *asyncfinder.vim-usage*
 
                                                                   *AsyncFinder*
-:AsyncFinder [-mode={mode}] [{pattern}]
+:AsyncFinder[!] [-mode={mode}] [{pattern}]
     Open new window and start searching for files, use |glob()| like {pattern} for matching 
     files and ** {pattern} to do recursive matching in sub-directories
     {pattern} examples:
         **/*.vim - will match all .vim script files in all sub-directories
         *.vim    - will match all .vim script files in current directory
         v        - will match all files that have v in it's name in current directory
+    If optional [!] bang is specified it repeates previously typed {pattern}
     First line is a title status line showing current active {mode} and current
     workign directory. {mode} can be: a - search in all locations, b - only buffers, 
     f - only files and m - most recently used files. 

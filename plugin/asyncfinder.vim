@@ -1,9 +1,9 @@
 " asyncfinder.vim - simple asynchronous fuzzy file finder for vim
 " Maintainer: Dmitry "troydm" Geurkov <d.geurkov@gmail.com>
-" Version: 0.2.4
+" Version: 0.2.5
 " Description: asyncfinder.vim is a simple asychronous fuzzy file finder
 " that searches for files in background without making you frustuated 
-" Last Change: 1 September, 2012
+" Last Change: 3 September, 2012
 " License: Vim License (see :help license)
 " Website: https://github.com/troydm/asyncfinder.vim
 "
@@ -48,6 +48,8 @@ python << EOF
 import vim, os, threading, fnmatch, random
 
 async_pattern = None
+async_prev_pattern = None
+async_prev_mode = None
 async_output = None
 
 class AsyncOutput:
@@ -220,7 +222,7 @@ def AsyncRefreshI():
     vim.command("call <SID>MoveCursorI()")
 
 def AsyncRefresh():
-    global async_pattern, async_output
+    global async_pattern, async_prev_pattern, async_prev_mode, async_output
     if len(vim.current.buffer) == 1:
         vim.command("bd!")
         return
@@ -234,6 +236,8 @@ def AsyncRefresh():
     mode = vim.eval("getbufvar('%','asyncfinder_mode')")
     pattern = vim.current.buffer[1]
     pattern = pattern[2:].strip()
+    async_prev_pattern = pattern
+    async_prev_mode = mode
     # expand tilde ~ to user home directory
     if '~' in pattern:
         pattern = pattern.replace('~',os.path.expanduser('~'))
@@ -461,7 +465,7 @@ function! s:ChangeModeTo(mode)
         exe moder
     endif
 endfunction
-function! s:OpenWindow(pattern)
+function! s:OpenWindow(bang,pattern)
     let winnr = bufwinnr('^asyncfinder$')
     if winnr < 0
         execute &lines/3 . 'sp asyncfinder'
@@ -487,13 +491,20 @@ function! s:OpenWindow(pattern)
         inoremap <buffer> <C-f> <C-o>:call <SID>ChangeMode()<CR>
         nnoremap <buffer> <C-f> :call <SID>ChangeMode()<CR>
         startinsert
-        if !empty(a:pattern)
-            let pattern = a:pattern
-            let m = matchlist(pattern,'-mode=\?\([abfm]\)\?')
-            if !empty(m)
-                call s:ChangeModeTo(m[1])
-                let pattern = substitute(pattern, '\s*-mode=\?[abfm]\?\s*','','')
+        let pattern = a:pattern
+        if a:bang == '!'
+            let pattern = pyeval('async_prev_pattern')
+            let mode = pyeval('async_prev_mode')
+            if mode != g:asyncfinder_initial_mode
+                let pattern = '-mode='.mode.' '.pattern
             endif
+        endif
+        let m = matchlist(pattern,'-mode=\?\([abfm]\)\?')
+        if !empty(m)
+            call s:ChangeModeTo(m[1])
+            let pattern = substitute(pattern, '\s*-mode=\?[abfm]\?\s*','','')
+        endif
+        if !empty(pattern)
             call feedkeys(pattern)
             python AsyncRefreshI()
         elseif !empty(g:asyncfinder_initial_pattern)
@@ -505,17 +516,24 @@ function! s:OpenWindow(pattern)
         call s:ClearPrompt()
         normal gg
         startinsert
-        if !empty(a:pattern)
-            let pattern = a:pattern
-            let m = matchlist(pattern,'-mode=\?\([abfm]\)\?')
-            if !empty(m)
-                call s:ChangeModeTo(m[1])
-                let pattern = substitute(pattern, '\s*-mode=\?[abfm]\?\s*','','')
-            endif
+        let pattern = a:pattern
+        let m = matchlist(pattern,'-mode=\?\([abfm]\)\?')
+        if !empty(m)
+            call s:ChangeModeTo(m[1])
+            let pattern = substitute(pattern, '\s*-mode=\?[abfm]\?\s*','','')
+        endif
+        if a:bang == '!'
+            let pattern = pyeval('async_prev_pattern')
+        endif
+        if !empty(pattern)
+            call feedkeys(pattern)
+            python AsyncRefreshI()
+        else
+            let pattern = pyeval('async_prev_pattern')
             call feedkeys(pattern)
             python AsyncRefreshI()
         endif
     endif
 endfunction
 
-command! -nargs=* -complete=file AsyncFinder call s:OpenWindow(<q-args>) 
+command! -bang -nargs=* -complete=file AsyncFinder call s:OpenWindow('<bang>',<q-args>) 
