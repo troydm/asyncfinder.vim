@@ -497,7 +497,9 @@ function! s:ChangeMode()
     endif
     call setbufvar('%','asyncfinder_mode',mode)
     let moder .= mode.' '
+    let pos = getpos('.')
     exe moder
+    call setpos('.',pos)
     python async_pattern = None
 endfunction
 function! s:ChangeModeTo(mode)
