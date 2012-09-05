@@ -1,10 +1,10 @@
-asyncfinder.vim for Vim version 7.0+   Last change: 3 September, 2012
+asyncfinder.vim for Vim version 7.0+   Last change: 5 September, 2012
 
 Maintainer: Dmitry "troydm" Geurkov <d.geurkov@gmail.com>
-Version: 0.2.5
+Version: 0.2.6
 Description: asyncfinder.vim is a simple asychronous fuzzy file finder
 that searches for files in background without making you frustuated 
-Last Change: 3 September, 2012
+Last Change: 5 September, 2012
 License: Vim License (see :help license)
 Website: https://github.com/troydm/asyncfinder.vim
 
@@ -37,18 +37,18 @@ Requirements:
  2. CONFIGURATION                                        *asyncfinder.vim-configuration*
 
                                                          *g:asyncfinder_ignore_dirs*
-g:asyncfinder_ignore_dirs     (Default: "['*.AppleDouble*','*.git*','*.hg*','*.bzr*']")
+g:asyncfinder_ignore_dirs     (Default: "['*.AppleDouble*','*.DS_Store*','*.git*','*.hg*','*.bzr*']")
     Ignore directories defined in this list when pattern matching files
     It also ignores those directories content including sub directories and files
     Use python's syntax to add additional directories to this list
 
                                                          *g:asyncfinder_ignore_files*
-g:asyncfinder_ignore_files    (Default: "['*.swp']")
+g:asyncfinder_ignore_files       (Default: "['*.swp']")
     Ignore files defined in this list when pattern matching
     Use python's syntax to add additional files to this list
 
                                                          *g:asyncfinder_initial_mode*
-g:asyncfinder_initial_mode    (Default: "a")
+g:asyncfinder_initial_mode       (Default: "a")
     Initial mode that is used if no -mode= option is specified
     Use a for all, b for buffers, f for files and m for most recently used files
 
@@ -56,12 +56,26 @@ g:asyncfinder_initial_mode    (Default: "a")
 g:asyncfinder_initial_pattern    (Default: "*")
     Initial pattern match that is executed the moment asyncfinder window opens
 
+                                                         *g:asyncfinder_match_exact*
+g:asyncfinder_match_exact        (Default: "0")
+    By default pattern you typed is automaticly appended with '*' as suffix and preffix
+    if only pattern already doesn't contains '*' as suffix or as preffix
+    For example 'myFuzzyPattern' automaticly becomes '*myFuzzyPattern*'
+    And 'myFuzzyPattern*' automaticly becomes '*myFuzzyPattern*'
+    If this option is enabled patterns you type are exactly matched as you typed them
+    and no extra '*' symbols are appended
+
+                                                         *g:asyncfinder_match_camel_case*
+g:asyncfinder_match_camel_case   (Default: "0")
+    If this option is enabled camel case patterns are fuzzy matched
+    For example 'myFuzzyPattern' automaticly becomes 'my*Fuzzy*Pattern'
+
                                                          *g:asyncfinder_include_buffers*
 g:asyncfinder_include_buffers    (Default: "1")
     Enable matching file buffers
 
                                                          *g:asyncfinder_include_mru_files*
-g:asyncfinder_include_mru_files    (Default: "1")
+g:asyncfinder_include_mru_files  (Default: "1")
     Enable matching most recently used files
     Note: this option is automaticly disabled if you don't have |MRU| plugin
 
@@ -77,9 +91,14 @@ g:asyncfinder_edit_file_on_single_result    (Default: "1")
     Open new window and start searching for files, use |glob()| like {pattern} for matching 
     files and ** {pattern} to do recursive matching in sub-directories
     {pattern} examples:
-        **/*.vim - will match all .vim script files in all sub-directories
-        *.vim    - will match all .vim script files in current directory
-        v        - will match all files that have v in it's name in current directory
+        vim       - will match all files that have vim in there name in current directory
+        *.vim     - will match all files that have .vim in there name in current directory
+        **.vim    - will match all files that .vim in fullname in current and all sub-directories
+        **/*.vim  - will match all files that .vim in fullname in all sub-directories
+        *.vim$    - will match all .vim script files in current directory
+        **.vim$   - will match all .vim script files in in current and all sub-directories
+        **/*.vim$ - will match all .vim script files in all sub-directories
+        ^vim      - will match all files that start with vim in current directory
     If optional [!] bang is specified it repeates previously typed {pattern}
     First line is a title status line showing current active {mode} and current
     workign directory. {mode} can be: a - search in all locations, b - only buffers, 

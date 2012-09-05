@@ -1,9 +1,9 @@
 " asyncfinder.vim - simple asynchronous fuzzy file finder for vim
 " Maintainer: Dmitry "troydm" Geurkov <d.geurkov@gmail.com>
-" Version: 0.2.5
+" Version: 0.2.6
 " Description: asyncfinder.vim is a simple asychronous fuzzy file finder
 " that searches for files in background without making you frustuated 
-" Last Change: 3 September, 2012
+" Last Change: 5 September, 2012
 " License: Vim License (see :help license)
 " Website: https://github.com/troydm/asyncfinder.vim
 "
@@ -16,7 +16,7 @@ if !has("python")
 endif
 
 if !exists("g:asyncfinder_ignore_dirs")
-    let g:asyncfinder_ignore_dirs = "['*.AppleDouble*','*.git*','*.hg*','*.bzr*']"
+    let g:asyncfinder_ignore_dirs = "['*.AppleDouble*','*.DS_Store*','*.git*','*.hg*','*.bzr*']"
 endif
 
 if !exists("g:asyncfinder_ignore_files")
@@ -29,6 +29,14 @@ endif
 
 if !exists("g:asyncfinder_initial_pattern")
     let g:asyncfinder_initial_pattern = "*"
+endif
+
+if !exists("g:asyncfinder_match_exact")
+    let g:asyncfinder_match_exact = 0
+endif
+
+if !exists("g:asyncfinder_match_camel_case")
+    let g:asyncfinder_match_camel_case = 0
 endif
 
 if !exists("g:asyncfinder_include_buffers")
@@ -251,6 +259,8 @@ def AsyncRefresh():
                 async_output.exit()
             async_output = AsyncOutput() 
             async_pattern = pattern
+            match_exact = vim.eval("g:asyncfinder_match_exact") == '1'
+            match_camel_case = vim.eval("g:asyncfinder_match_camel_case") == '1'
             ignore_dirs = vim.eval("g:asyncfinder_ignore_dirs")
             ignore_files = vim.eval("g:asyncfinder_ignore_files")
             if ('a' in mode or 'b' in mode) and vim.eval("g:asyncfinder_include_buffers") == "1":
@@ -260,7 +270,7 @@ def AsyncRefresh():
             mru_file = ""
             if ('a' in mode or 'm' in mode) and vim.eval("g:asyncfinder_include_mru_files") == "1" and vim.eval("exists('MRU_File')") == "1":
                 mru_file = vim.eval("MRU_File")
-            t = threading.Thread(target=AsyncSearch, args=(mode,pattern,buf_list,mru_file,ignore_dirs,ignore_files,))
+            t = threading.Thread(target=AsyncSearch, args=(mode,pattern,buf_list,mru_file,match_exact,match_camel_case,ignore_dirs,ignore_files,))
             t.daemon = True
             t.start()
     else:
@@ -282,7 +292,7 @@ def AsyncRefresh():
         if len(output) > 0:
             vim.current.buffer.append(output)
 
-def AsyncSearch(mode,pattern,buf_list, mru_file,ignore_dirs,ignore_files):
+def AsyncSearch(mode,pattern,buf_list, mru_file, match_exact, match_camel_case, ignore_dirs,ignore_files):
     global async_output
     output = async_output
     if output.toExit():
@@ -291,11 +301,45 @@ def AsyncSearch(mode,pattern,buf_list, mru_file,ignore_dirs,ignore_files):
     glob.ignore_dirs = eval(ignore_dirs)
     glob.ignore_files = eval(ignore_files)
     pattern = pattern.split(os.path.sep)
-    if not glob.has_magic(pattern[-1]):
-        if len(pattern[-1]) > 0:
-            pattern[-1] = '*'+pattern[-1]+'*'
-        else:
-            pattern[-1] = '*'
+    if match_camel_case:
+        if len(pattern[-1]) > 1:
+            camel = []
+            i = 0
+            f = 0
+            prevup = False
+            for c in pattern[-1]:
+                up = c.isupper()
+                if i != f:
+                    if up and prevup != up:
+                        camel.append(pattern[-1][f:i])
+                        f = i
+                prevup = up
+                i += 1
+            if len(pattern[-1][f:]) > 0:
+                camel.append(pattern[-1][f:])
+            for i in xrange(len(camel)-1):
+                p = camel[i]
+                p2 = camel[i+1]
+                if not (p[-1] == '*' or  p2[0] == '*'):
+                    p += '*'
+                camel[i] = p
+            pattern[-1] = ''.join(camel)
+    if len(pattern[-1]) > 0:
+        if not match_exact:
+            if pattern[-1][0] != '*' and pattern[-1][0] != '^':
+                pattern[-1] = '*'+pattern[-1]
+            if pattern[-1][0] == '^':
+                pattern[-1] = pattern[-1][1:]
+                if len(pattern[-1]) == 0:
+                    pattern[-1] = '*'
+            if pattern[-1][-1] != '*' and pattern[-1][-1] != '$':
+                pattern[-1] = pattern[-1]+'*'
+            if pattern[-1][-1] == '$':
+                pattern[-1] = pattern[-1][:-1]
+            if pattern[-1] == '':
+                pattern[-1] = '*'
+    else:
+        pattern[-1] = '*'
     pattern = os.path.sep.join(pattern)
     if 'a' in mode or 'b' in mode:
         glob.glob_buffers(buf_list,pattern)
