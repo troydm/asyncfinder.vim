@@ -511,11 +511,11 @@ function! s:ChangeModeTo(mode)
         exe moder
     endif
 endfunction
-function! s:OpenWindow(bang,pattern)
+function! s:OpenWindow(bang,win,pattern)
     let winnr = bufwinnr('^asyncfinder$')
     if winnr < 0
-        execute &lines/3 . 'sp asyncfinder'
-        setlocal filetype=asyncfinder buftype=nofile bufhidden=wipe nobuflisted noswapfile nowrap
+        execute a:win.(&lines/3).'sp asyncfinder'
+        setlocal filetype=asyncfinder buftype=nofile bufhidden=wipe nobuflisted noswapfile nonumber nowrap
         call setbufvar("%","prevupdatetime",&updatetime)
         call setbufvar("%","asyncfinder_mode",g:asyncfinder_initial_mode)
         call setline(1, 'Type your pattern  (mode: '.g:asyncfinder_initial_mode.' cwd: '.getcwd().')')
@@ -582,4 +582,6 @@ function! s:OpenWindow(bang,pattern)
     endif
 endfunction
 
-command! -bang -nargs=* -complete=file AsyncFinder call s:OpenWindow('<bang>',<q-args>) 
+command! -bang -nargs=* -complete=file AsyncFinder call s:OpenWindow('<bang>','',<q-args>) 
+command! -bang -nargs=* -complete=file AsyncFinderTop call s:OpenWindow('<bang>','topleft ',<q-args>) 
+command! -bang -nargs=* -complete=file AsyncFinderBottom call s:OpenWindow('<bang>','botright ',<q-args>) 

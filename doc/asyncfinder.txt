@@ -119,4 +119,12 @@ g:asyncfinder_edit_file_on_single_result    (Default: "1")
     in command prompt replaces the {pattern} with the first result directory name 
     To close result window just kill the buffer using |:bd| or press <C-q>
 
+                                                                  *AsyncFinderTop*
+:AsyncFinderTop[!] [-mode={mode}] [{pattern}]
+    Same as |AsyncFinder| but opens window at the top
+
+                                                                  *AsyncFinderBottom*
+:AsyncFinderBottom[!] [-mode={mode}] [{pattern}]
+    Same as |AsyncFinder| but opens window at the bottom
+
  vim:tw=78:ts=8:ft=help:norl:
