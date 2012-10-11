@@ -51,6 +51,10 @@ if !exists("g:asyncfinder_edit_file_on_single_result")
     let g:asyncfinder_edit_file_on_single_result = 1
 endif
 
+if !exists("g:asyncfinder_speed_mode")
+    let g:asyncfinder_speed_mode = 1
+endif
+
 python << EOF
 
 import vim, os, threading, fnmatch, random
@@ -259,10 +263,12 @@ def AsyncRefresh():
                 async_output.exit()
             async_output = AsyncOutput() 
             async_pattern = pattern
+            speed_mode = vim.eval("g:asyncfinder_speed_mode") == '1'
             match_exact = vim.eval("g:asyncfinder_match_exact") == '1'
             match_camel_case = vim.eval("g:asyncfinder_match_camel_case") == '1'
             ignore_dirs = vim.eval("g:asyncfinder_ignore_dirs")
             ignore_files = vim.eval("g:asyncfinder_ignore_files")
+            # Get buffer list
             if ('a' in mode or 'b' in mode) and vim.eval("g:asyncfinder_include_buffers") == "1":
                 buf_list = vim.eval("map(filter(range(1,bufnr(\"$\")), \"buflisted(v:val)\"),\"bufname(v:val)\")")
             else:
@@ -270,9 +276,16 @@ def AsyncRefresh():
             mru_file = ""
             if ('a' in mode or 'm' in mode) and vim.eval("g:asyncfinder_include_mru_files") == "1" and vim.eval("exists('MRU_File')") == "1":
                 mru_file = vim.eval("MRU_File")
-            t = threading.Thread(target=AsyncSearch, args=(mode,pattern,buf_list,mru_file,match_exact,match_camel_case,ignore_dirs,ignore_files,))
-            t.daemon = True
-            t.start()
+            # Disable speed mode when doing recursive file search
+            if speed_mode:
+                if ('a' in mode or 'f' in mode) and '**' in pattern:
+                    speed_mode = False
+            if speed_mode:
+                AsyncSearch(mode,pattern,buf_list,mru_file,match_exact,match_camel_case,ignore_dirs,ignore_files)
+            else:
+                t = threading.Thread(target=AsyncSearch, args=(mode,pattern,buf_list,mru_file,match_exact,match_camel_case,ignore_dirs,ignore_files,))
+                t.daemon = True
+                t.start()
     else:
         if len(vim.current.buffer) > 2:
             vim.current.buffer[2:] = None

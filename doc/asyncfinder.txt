@@ -83,6 +83,14 @@ g:asyncfinder_include_mru_files  (Default: "1")
 g:asyncfinder_edit_file_on_single_result    (Default: "1")
     When enabled and if only one result is returned and enter pressed start editing this file
 
+                                                         *g:asyncfinder_speed_mode*
+g:asyncfinder_speed_mode    (Default: "1")
+    When enabled asyncfinder will try to speed up file search in
+    situations where you don't need to recursivly search for files in
+    sub-directories thus producing results much faster
+    This mode might introduce some delays in rare cases so you are adviced to
+    disable it if you suffer from unresponsive search
+
 ============================================================================================
  2. USAGE                                                         *asyncfinder.vim-usage*
 
