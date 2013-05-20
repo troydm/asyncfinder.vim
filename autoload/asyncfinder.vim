@@ -129,6 +129,8 @@ function! s:PositionCursor()
     if p[1] == 1 || (p[1] == 2 && p[2] < 3)
         normal ggjA
     endif
+    " to prevent position reset after InsertEnter autocommand is triggered
+    let v:char = '.'
 endfunction
 function! s:ChangeMode()
     let mode = getbufvar('%','asyncfinder_mode')
