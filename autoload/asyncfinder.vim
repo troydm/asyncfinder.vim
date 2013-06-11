@@ -15,7 +15,7 @@ python << EOF
 import vim, sys
 asyncfinder_path = vim.eval("expand('<sfile>:h')")
 if not asyncfinder_path in sys.path:
-    sys.path.append(asyncfinder_path)
+    sys.path.insert(0, asyncfinder_path)
 del asyncfinder_path 
 import asyncfinder
 EOF
