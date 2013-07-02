@@ -164,10 +164,10 @@ class AsyncGlobber:
                 break
             if self.fnmatch_list(root,self.ignore_dirs):
                 continue
+            dirs[:] = [d for d in dirs if not self.fnmatch_list(d,self.ignore_dirs)]
             for d in dirs:
                 if self.fnmatch(os.path.join(root,d),pattern):
-                    if not self.fnmatch_list(d,self.ignore_dirs):
-                        self.addDir(os.path.join(root,d))
+                    self.addDir(os.path.join(root,d))
             for f in files:
                 if self.fnmatch(os.path.join(root,f),pattern):
                     if not self.fnmatch_list(f,self.ignore_files):

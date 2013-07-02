@@ -37,7 +37,7 @@ Requirements:
  2. CONFIGURATION                                        *asyncfinder.vim-configuration*
 
                                                          *g:asyncfinder_ignore_dirs*
-g:asyncfinder_ignore_dirs     (Default: "['*.AppleDouble*','*.DS_Store*','*.git*','*.hg*','*.bzr*']")
+g:asyncfinder_ignore_dirs     (Default: "['.AppleDouble','.DS_Store','.git','.hg','.bzr']")
     Ignore directories defined in this list when pattern matching files
     It also ignores those directories content including sub directories and files
     Use python's syntax to add additional directories to this list

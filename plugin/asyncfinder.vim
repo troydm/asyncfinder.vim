@@ -17,7 +17,7 @@ endif
 
 " options {{{
 if !exists("g:asyncfinder_ignore_dirs")
-    let g:asyncfinder_ignore_dirs = "['*.AppleDouble*','*.DS_Store*','*.git*','*.hg*','*.bzr*']"
+    let g:asyncfinder_ignore_dirs = "['.AppleDouble','.DS_Store','.git','.hg','.bzr']"
 endif
 
 if !exists("g:asyncfinder_ignore_files")
