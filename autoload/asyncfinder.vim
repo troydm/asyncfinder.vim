@@ -180,8 +180,8 @@ function! asyncfinder#OpenWindow(bang,win,pattern)
         call setbufvar("%","asyncfinder_mode",g:asyncfinder_initial_mode)
         call setline(1, 'Type your pattern  (mode: '.g:asyncfinder_initial_mode.' cwd: '.getcwd().')')
         call s:ClearPrompt()
-        set updatetime=500
-        au BufEnter <buffer> set updatetime=500
+        set updatetime=250
+        au BufEnter <buffer> set updatetime=250
         au BufWipeout <buffer> python asyncfinder.AsyncCancel()
         au BufLeave <buffer> let &updatetime=getbufvar('%','prevupdatetime')
         au InsertEnter <buffer> call s:PositionCursor()

@@ -220,7 +220,7 @@ def AsyncRefresh():
             ignore_files = vim.eval("g:asyncfinder_ignore_files")
             # Get buffer list
             if ('a' in mode or 'b' in mode) and vim.eval("g:asyncfinder_include_buffers") == "1":
-                buf_list = vim.eval("map(filter(range(1,bufnr(\"$\")), \"buflisted(v:val)\"),\"bufname(v:val)\")")
+                buf_list = vim.eval("map(filter(range(1,bufnr(\"$\")), \"buflisted(v:val) && bufname(v:val) != ''\"),\"bufname(v:val)\")")
             else:
                 buf_list = []
             mru_file = ""
