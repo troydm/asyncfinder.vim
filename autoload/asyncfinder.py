@@ -7,12 +7,13 @@
 # License: Vim License (see :help license)
 # Website: https://github.com/troydm/asyncfinder.vim
 
-import vim, os, threading, fnmatch, random
+import vim, os, threading, fnmatch, random, platform
 
 async_pattern = None
 async_prev_pattern = None
 async_prev_mode = None
 async_output = None
+async_on_windows = platform.system() == 'Windows'
 
 class AsyncOutput:
     def __init__(self):
@@ -256,10 +257,12 @@ def AsyncRefresh():
             vim.current.buffer.append(output)
 
 def AsyncSearch(mode,pattern,buf_list, mru_file, match_exact, match_camel_case, ignore_dirs,ignore_files):
-    global async_output
+    global async_output, async_on_windows
     output = async_output
     if output.toExit():
         return
+    if async_on_windows:
+        pattern = pattern.replace('/','\\')
     glob = AsyncGlobber(output)
     glob.ignore_dirs = eval(ignore_dirs)
     glob.ignore_files = eval(ignore_files)

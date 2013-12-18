@@ -21,6 +21,14 @@ import asyncfinder
 EOF
 " }}}
 
+" variables {{{
+if has('win32') || has('win64')
+    let s:path_sep = '\'
+else
+    let s:path_sep = '/'
+endif
+" }}}
+
 " functions {{{
 " asyncfinder search prompt functions {{{
 function! s:MoveCursorI()
@@ -52,7 +60,7 @@ function! s:Edit()
     endif
     if !empty(f)
         if f[0] == 'd' && f[1] == ' '
-            call setline(2,"> ".f[2:]."/")
+            call setline(2,"> ".f[2:].s:path_sep)
             call feedkeys("ggjA")
             call s:Clear()
         endif
@@ -78,7 +86,7 @@ function! s:EnterPressed()
         let t = getline(3)
         if !empty(t) 
             if t[0] == 'd'
-                call setline(2,"> ".t[2:]."/")
+                call setline(2,"> ".t[2:].s:path_sep)
                 call feedkeys("$a")
                 call s:Clear()
                 return
