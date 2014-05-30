@@ -72,7 +72,7 @@ function! s:Edit()
 endfunction
 function! s:EnterPressedI()
     if col('.') != (col('$')-1)
-        normal l
+        normal! l
     endif
     call s:EnterPressed()
 endfunction
@@ -112,18 +112,18 @@ endfunction
 function! s:BackspacePressed()
     if s:CursorInPrompt()
         if (col('.')+1) == col('$')
-            normal xa 
+            normal! "_xa 
         else
-            normal x
+            normal! "_x
         endif
     endif
 endfunction
 function! s:DelPressed()
     if s:CursorInPrompt()
         if (col('.')+1) == col('$')
-            normal xa 
+            normal! "_xa 
         else
-            normal x
+            normal! "_x
         endif
     endif
 endfunction
@@ -135,7 +135,7 @@ endfunction
 function! s:PositionCursor()
     let p = getpos('.')
     if p[1] == 1 || (p[1] == 2 && p[2] < 3)
-        normal ggjA
+        normal! ggjA
     endif
     " to prevent position reset after InsertEnter autocommand is triggered
     let v:char = '.'
@@ -228,7 +228,7 @@ function! asyncfinder#OpenWindow(bang,win,pattern)
     else
         exe winnr . 'wincmd w'
         call s:ClearPrompt()
-        normal gg
+        normal! gg
         startinsert
         let pattern = a:pattern
         let m = matchlist(pattern,'-mode=\?\([abfm]\)\?')
