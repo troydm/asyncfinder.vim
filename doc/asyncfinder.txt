@@ -1,10 +1,10 @@
 asyncfinder.vim for Vim version 7.0+   Last change: 5 September, 2012
 
 Maintainer: Dmitry "troydm" Geurkov <d.geurkov@gmail.com>
-Version: 0.2.6
+Version: 0.2.7
 Description: asyncfinder.vim is a simple asychronous fuzzy file finder
 that searches for files in background without making you frustuated 
-Last Change: 5 September, 2012
+Last Change: 10 October, 2014
 License: Vim License (see :help license)
 Website: https://github.com/troydm/asyncfinder.vim
 
@@ -36,28 +36,33 @@ Requirements:
 ============================================================================================
  2. CONFIGURATION                                        *asyncfinder.vim-configuration*
 
+                                                         *g:asyncfinder_open_in_prev_win*
+g:asyncfinder_open_in_prev_win (Default: 0)
+    When enabled instead of closing asyncfinder window when opening a file
+    opens it in the last accessed window instead and leaves asyncfinder window opened
+
                                                          *g:asyncfinder_ignore_dirs*
-g:asyncfinder_ignore_dirs     (Default: "['.AppleDouble','.DS_Store','.git','.hg','.bzr']")
+g:asyncfinder_ignore_dirs      (Default: "['.AppleDouble','.DS_Store','.git','.hg','.bzr']")
     Ignore directories defined in this list when pattern matching files
     It also ignores those directories content including sub directories and files
     Use python's syntax to add additional directories to this list
 
                                                          *g:asyncfinder_ignore_files*
-g:asyncfinder_ignore_files       (Default: "['*.swp']")
+g:asyncfinder_ignore_files                  (Default: "['*.swp']")
     Ignore files defined in this list when pattern matching
     Use python's syntax to add additional files to this list
 
                                                          *g:asyncfinder_initial_mode*
-g:asyncfinder_initial_mode       (Default: "a")
+g:asyncfinder_initial_mode                  (Default: "a")
     Initial mode that is used if no -mode= option is specified
     Use a for all, b for buffers, f for files and m for most recently used files
 
                                                          *g:asyncfinder_initial_pattern*
-g:asyncfinder_initial_pattern    (Default: "*")
+g:asyncfinder_initial_pattern               (Default: "*")
     Initial pattern match that is executed the moment asyncfinder window opens
 
                                                          *g:asyncfinder_match_exact*
-g:asyncfinder_match_exact        (Default: "0")
+g:asyncfinder_match_exact                   (Default: 0)
     By default pattern you typed is automaticly appended with '*' as suffix and preffix
     if only pattern already doesn't contains '*' as suffix or as preffix
     For example 'myFuzzyPattern' automaticly becomes '*myFuzzyPattern*'
@@ -66,30 +71,59 @@ g:asyncfinder_match_exact        (Default: "0")
     and no extra '*' symbols are appended
 
                                                          *g:asyncfinder_match_camel_case*
-g:asyncfinder_match_camel_case   (Default: "0")
+g:asyncfinder_match_camel_case              (Default: 0)
     If this option is enabled camel case patterns are fuzzy matched
     For example 'myFuzzyPattern' automaticly becomes 'my*Fuzzy*Pattern'
 
                                                          *g:asyncfinder_include_buffers*
-g:asyncfinder_include_buffers    (Default: "1")
+g:asyncfinder_include_buffers               (Default: 1)
     Enable matching file buffers
 
                                                          *g:asyncfinder_include_mru_files*
-g:asyncfinder_include_mru_files  (Default: "1")
+g:asyncfinder_include_mru_files             (Default: 1)
     Enable matching most recently used files
     Note: this option is automaticly disabled if you don't have |MRU| plugin
 
                                                          *g:asyncfinder_edit_file_on_single_result*
-g:asyncfinder_edit_file_on_single_result    (Default: "1")
+g:asyncfinder_edit_file_on_single_result    (Default: 1)
     When enabled and if only one result is returned and enter pressed start editing this file
 
                                                          *g:asyncfinder_speed_mode*
-g:asyncfinder_speed_mode    (Default: "1")
+g:asyncfinder_speed_mode                    (Default: 1)
     When enabled asyncfinder will try to speed up file search in
     situations where you don't need to recursivly search for files in
     sub-directories thus producing results much faster
     This mode might introduce some delays in rare cases so you are adviced to
     disable it if you suffer from unresponsive search
+
+                                                         *g:asyncfinder_grep_cmd*
+g:asyncfinder_grep_cmd                (Default: "grep")
+    Specifies the grep command to use. ack or ack-grep commands can be used instead.
+
+                                                         *g:asyncfinder_grep_open_in_prev_win*
+g:asyncfinder_grep_open_in_prev_win   (Default: 0)
+    When enabled instead of closing asyncgrep window when opening a file
+    opens it in the last accessed window instead and leaves asyncgrep window opened
+
+                                                         *g:asyncfinder_grep_initial_pattern*
+g:asyncfinder_grep_initial_pattern    (Default: "")
+    Initial pattern match that is executed the moment asyncgrep window opens
+
+                                                         *g:asyncfinder_grep_ignore_case*
+g:asyncfinder_grep_ignore_case        (Default: 0)
+    Ignore case when greping files for pattern match
+
+                                                         *g:asyncfinder_grep_ignore_dirs*
+g:asyncfinder_grep_ignore_dirs        (Default: "['.AppleDouble','.DS_Store','.git','.hg','.bzr']")
+    Ignore directories defined in this list when greping for pattern match
+    It also ignores those directories content including sub directories and files
+    Use python's syntax to add additional directories to this list
+
+                                                         *g:asyncfinder_grep_ignore_files*
+g:asyncfinder_grep_ignore_files       (Default: "['*.swp']")
+    Ignore files defined in this list when greping for pattern match
+    Use python's syntax to add additional files to this list
+    Note: when using ack or ack-grep command this option is ignored since ack doesn't supports it
 
 ============================================================================================
  2. USAGE                                                         *asyncfinder.vim-usage*
@@ -134,5 +168,23 @@ g:asyncfinder_speed_mode    (Default: "1")
                                                                   *AsyncFinderBottom*
 :AsyncFinderBottom[!] [-mode={mode}] [{pattern}]
     Same as |AsyncFinder| but opens window at the bottom
+
+                                                                  *AsyncGrep*
+:AsyncGrep[!] [{pattern}]
+    Open new window and start searching in files, using |grep| command for a {pattern} match 
+    also recursivly matching files in sub-directories. |grep| patterns are used so check
+    grep manual for pattern description and rules 
+    If optional [!] bang is specified it repeates previously typed {pattern}
+    Results are shown under '> ' {pattern} prompt (second line)
+    If <Enter> is pressed over matching line it opens the file on the line specified in the match
+    To close result window just kill the buffer using |:bd| or press <C-q>
+
+                                                                  *AsyncGrepTop*
+:AsyncGrepTop[!] [{pattern}]
+    Same as |AsyncGrep| but opens window at the top
+
+                                                                  *AsyncGrepBottom*
+:AsyncGrepBottom[!] [{pattern}]
+    Same as |AsyncGrep| but opens window at the bottom
 
  vim:tw=78:ts=8:ft=help:norl:

@@ -1,9 +1,9 @@
 " asyncfinder.vim - simple asynchronous fuzzy file finder for vim
 " Maintainer: Dmitry "troydm" Geurkov <d.geurkov@gmail.com>
-" Version: 0.2.6
+" Version: 0.2.7
 " Description: asyncfinder.vim is a simple asychronous fuzzy file finder
 " that searches for files in background without making you frustuated 
-" Last Change: 5 September, 2012
+" Last Change: 10 October, 2014
 " License: Vim License (see :help license)
 " Website: https://github.com/troydm/asyncfinder.vim
 "
@@ -40,7 +40,7 @@ function! s:MoveCursorI()
 endfunction
 function! s:Clear()
     if line('$') > 2
-        3,$delete
+        silent! 3,$delete
     endif
 endfunction
 function! s:ClearPrompt()
@@ -65,7 +65,11 @@ function! s:Edit()
             call s:Clear()
         endif
         if (f[0] == 'f' || f[0] == 'b' || f[0] == 'm') && f[1] == ' ' 
-            silent! bd!
+            if g:asyncfinder_open_in_prev_win
+                exe b:prevwinnr.'wincmd w'
+            else
+                silent! bd!
+            endif
             exe ':e '.f[2:]
         endif
     endif
@@ -105,6 +109,38 @@ function! s:EnterPressed()
         call s:Edit()
     endif
 endfunction
+function! s:EnterPressedGrepI()
+    if col('.') != (col('$')-1)
+        normal! l
+    endif
+    call s:EnterPressedGrep()
+endfunction
+function! s:EnterPressedGrep()
+    let p = getpos('.')
+    if p[1] == 1
+        startinsert
+        return
+    endif
+    let ln = getpos('.')[1]
+    if ln > 2
+        let line = getline(ln)
+        let mln = matchstr(line, "\\d\\+:")
+        if mln != ''
+          let mfn = ''
+          let mln = mln[:-2]
+          let i = match(line, "\\d\\+:")
+          let mfn = line[:i-2]
+          if filereadable(mfn)
+              if g:asyncfinder_grep_open_in_prev_win
+                  exe b:prevwinnr.'wincmd w'
+              else
+                  silent! bd!
+              endif
+              exe ':e +'.mln.' '.mfn
+          endif
+        endif 
+    endif
+endfunction
 function! s:CursorInPrompt()
     let p = getpos('.')
     return p[1] == 2 && p[2] > 2
@@ -134,7 +170,7 @@ function! s:CharTyped()
 endfunction
 function! s:PositionCursor()
     let p = getpos('.')
-    if p[1] == 1 || (p[1] == 2 && p[2] < 3)
+    if p[1] == 1 || (p[1] == 2 && p[2] < 3) || p[1] > 2
         normal! ggjA
     endif
     " to prevent position reset after InsertEnter autocommand is triggered
@@ -176,6 +212,36 @@ function! s:ChangeModeTo(mode)
         exe moder
     endif
 endfunction
+function! s:GrepCmd()
+    let options = ''
+    if g:asyncfinder_grep_ignore_case
+        let options .= ' -i'
+    endif
+    if match(g:asyncfinder_grep_cmd, 'ack') == len(g:asyncfinder_grep_cmd)-3 ||
+          \ match(g:asyncfinder_grep_cmd, 'ack-grep') == len(g:asyncfinder_grep_cmd)-8
+        " ack command
+        for d in eval(g:asyncfinder_grep_ignore_dirs)
+            let options .= ' --ignore-dir='.d
+        endfor
+        return g:asyncfinder_grep_cmd.' '.options.' '''.s:GrepPattern().''' '.getcwd()
+    else
+        " grep command
+        for f in eval(g:asyncfinder_grep_ignore_files)
+            let options .= ' --exclude='.f
+        endfor
+        for d in eval(g:asyncfinder_grep_ignore_dirs)
+            let options .= ' --exclude-dir='.d
+        endfor
+        return g:asyncfinder_grep_cmd.' -n -r'.options.' -e '''.s:GrepPattern().''' '.getcwd()
+    endif
+endfunction
+function! s:GrepPattern()
+    let pattern = getline(2)[2:]
+    if pattern[len(pattern)-1] == ' '
+        let pattern = pattern[:-2]
+    endif
+    return pattern 
+endfunction
 " }}}
 
 " open window function {{{2
@@ -184,6 +250,7 @@ function! asyncfinder#OpenWindow(bang,win,pattern)
     if winnr < 0
         execute a:win.(&lines/3).'sp asyncfinder'
         setlocal filetype=asyncfinder buftype=nofile bufhidden=wipe nobuflisted noswapfile nonumber nowrap
+        call setbufvar("%","prevwinnr",winnr('#'))
         call setbufvar("%","prevupdatetime",&updatetime)
         call setbufvar("%","asyncfinder_mode",g:asyncfinder_initial_mode)
         call setline(1, 'Type your pattern  (mode: '.g:asyncfinder_initial_mode.' cwd: '.getcwd().')')
@@ -249,6 +316,56 @@ function! asyncfinder#OpenWindow(bang,win,pattern)
         endif
     endif
 endfunction
+
+function! asyncfinder#OpenGrepWindow(bang,win,pattern)
+    let winnr = bufwinnr('^asyncgrep$')
+    if winnr < 0
+        execute a:win.(&lines/3).'sp asyncgrep'
+        setlocal filetype=asyncgrep buftype=nofile bufhidden=wipe nobuflisted noswapfile nonumber nowrap
+        call setbufvar("%","prevwinnr",winnr('#'))
+        call setbufvar("%","prevupdatetime",&updatetime)
+        call setline(1, 'Type your pattern  ('.s:GrepCmd().')')
+        call s:ClearPrompt()
+        set updatetime=250
+        au BufEnter <buffer> set updatetime=250
+        au BufWipeout <buffer> python asyncfinder.AsyncGrepCancel()
+        au BufLeave <buffer> let &updatetime=getbufvar('%','prevupdatetime')
+        au InsertEnter <buffer> call s:PositionCursor()
+        au CursorHold <buffer> python asyncfinder.AsyncGrepRefreshN()
+        au CursorHoldI <buffer> python asyncfinder.AsyncGrepRefreshI()
+        au InsertCharPre <buffer> call <SID>CharTyped()
+        inoremap <buffer> <CR> <ESC>:call <SID>EnterPressedGrepI()<CR>
+        inoremap <buffer> <BS> <ESC>:call <SID>BackspacePressed() \| startinsert<CR>
+        inoremap <buffer> <Del> <ESC>l:call <SID>DelPressed() \| startinsert<CR>
+        nnoremap <buffer> <CR> :call <SID>EnterPressedGrep()<CR> \| echo<CR>
+        inoremap <buffer> <C-q> <ESC>:silent! bd! \| echo<CR>
+        startinsert
+        let pattern = a:pattern
+        if a:bang == '!'
+            let pattern = pyeval('asyncfinder.async_grep_prev_pattern')
+        endif
+        if !empty(pattern)
+            call feedkeys(pattern)
+            python asyncfinder.AsyncGrepRefreshI()
+        elseif !empty(g:asyncfinder_grep_initial_pattern)
+            call feedkeys(g:asyncfinder_grep_initial_pattern)
+            python asyncfinder.AsyncGrepRefreshI()
+        endif
+    else
+        exe winnr . 'wincmd w'
+        call s:ClearPrompt()
+        normal! gg
+        startinsert
+        let pattern = a:pattern
+        if a:bang == '!'
+            let pattern = pyeval('asyncfinder.async_grep_prev_pattern')
+        endif
+        if !empty(pattern)
+            call feedkeys(pattern)
+            python asyncfinder.AsyncGrepRefreshI()
+        endif
+    endif
+endfunction
 " }}}
 
-" vim: set sw=2 sts=2 et fdm=marker:
+" vim: set sw=4 sts=4 et fdm=marker:
