@@ -432,7 +432,8 @@ def AsyncGrepBuiltin(cmd,cwd):
     i = 1
     while cmd[i] != "'" or cmd[i-1] == "\\":
         i += 1
-    pattern = eval(cmd[:i+1])
+    pattern = cmd[1:i]
+    pattern = pattern.replace("\\'","'")
     cwd = cmd[i+1:].lstrip()
     async_grep_file_output = AsyncOutput()
     file_output = async_grep_file_output

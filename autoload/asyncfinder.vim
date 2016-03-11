@@ -214,7 +214,7 @@ function! s:GrepCmd()
     if g:asyncfinder_grep_cmd == 'builtin'
         let options .= string(eval(g:asyncfinder_grep_ignore_files))
         let options .= string(eval(g:asyncfinder_grep_ignore_dirs))
-        let pattern = substitute(s:GrepPattern(),"'","\\\\'","")
+        let pattern = substitute(s:GrepPattern(),"'","\\\\'",'g')
         if pattern == '\'
             let pattern = ''
         endif
