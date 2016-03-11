@@ -1,9 +1,9 @@
 " asyncfinder.vim - simple asynchronous fuzzy file finder for vim
 " Maintainer: Dmitry "troydm" Geurkov <d.geurkov@gmail.com>
-" Version: 0.2.7
+" Version: 0.2.8
 " Description: asyncfinder.vim is a simple asychronous fuzzy file finder
 " that searches for files in background without making you frustuated 
-" Last Change: 10 October, 2014
+" Last Change: 11 March, 2016
 " License: Vim License (see :help license)
 " Website: https://github.com/troydm/asyncfinder.vim
 "
@@ -212,18 +212,41 @@ function! s:ChangeModeTo(mode)
         exe moder
     endif
 endfunction
+function! s:StrEndsWith(s,e)
+    return a:s[len(a:s)-len(a:e) : len(a:s)-1] == a:e
+endfunction
 function! s:GrepCmd()
     let options = ''
     if g:asyncfinder_grep_ignore_case
         let options .= ' -i'
     endif
-    if match(g:asyncfinder_grep_cmd, 'ack') == len(g:asyncfinder_grep_cmd)-3 ||
-          \ match(g:asyncfinder_grep_cmd, 'ack-grep') == len(g:asyncfinder_grep_cmd)-8
+    if g:asyncfinder_grep_cmd == 'builtin'
+        let options .= string(eval(g:asyncfinder_grep_ignore_files))
+        let options .= string(eval(g:asyncfinder_grep_ignore_dirs))
+        let pattern = substitute(s:GrepPattern(),"'","\\\\'","")
+        if pattern == '\'
+            let pattern = ''
+        endif
+        return g:asyncfinder_grep_cmd.' '.options.' '''.pattern.''' '.getcwd()
+    elseif s:StrEndsWith(g:asyncfinder_grep_cmd,'ack') || s:StrEndsWith(g:asyncfinder_grep_cmd,'ack-grep')
         " ack command
+        let options .= ' -a'
         for d in eval(g:asyncfinder_grep_ignore_dirs)
             let options .= ' --ignore-dir='.d
         endfor
-        return g:asyncfinder_grep_cmd.' '.options.' '''.s:GrepPattern().''' '.getcwd()
+        return g:asyncfinder_grep_cmd.options.' '''.s:GrepPattern().''' '.getcwd()
+    elseif s:StrEndsWith(g:asyncfinder_grep_cmd,'ag')
+        " ag command
+        if !g:asyncfinder_grep_ignore_case
+            let options .= ' -s'
+        endif
+        for f in eval(g:asyncfinder_grep_ignore_files)
+            let options .= ' --ignore '.f
+        endfor
+        for d in eval(g:asyncfinder_grep_ignore_dirs)
+            let options .= ' --ignore '.d
+        endfor
+        return g:asyncfinder_grep_cmd.options.' '''.s:GrepPattern().''' '.getcwd()
     else
         " grep command
         for f in eval(g:asyncfinder_grep_ignore_files)
@@ -324,7 +347,17 @@ function! asyncfinder#OpenGrepWindow(bang,win,pattern)
         setlocal filetype=asyncgrep buftype=nofile bufhidden=wipe nobuflisted noswapfile nonumber nowrap
         call setbufvar("%","prevwinnr",winnr('#'))
         call setbufvar("%","prevupdatetime",&updatetime)
-        call setline(1, 'Type your pattern  ('.s:GrepCmd().')')
+        if g:asyncfinder_grep_cmd == 'builtin'
+            let s = 'ignore_files: '.g:asyncfinder_grep_ignore_files
+            let s .= ' ignore_dirs: '.g:asyncfinder_grep_ignore_dirs
+            if g:asyncfinder_grep_ignore_case == 1
+                let s .= ' ignore_case'
+            endif
+            let s .= ' cwd: '.getcwd()
+            call setline(1, 'Type your pattern  ('.s.')')
+        else
+            call setline(1, 'Type your pattern  ('.s:GrepCmd().')')
+        endif
         call s:ClearPrompt()
         set updatetime=250
         au BufEnter <buffer> set updatetime=250

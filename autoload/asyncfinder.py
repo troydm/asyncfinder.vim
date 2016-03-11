@@ -1,13 +1,13 @@
 # asyncfinder.vim - simple asynchronous fuzzy file finder for vim
 # Maintainer: Dmitry "troydm" Geurkov <d.geurkov@gmail.com>
-# Version: 0.2.7
+# Version: 0.2.8
 # Description: asyncfinder.vim is a simple asychronous fuzzy file finder
 # that searches for files in background without making you frustuated 
-# Last Change: 10 October, 2014
+# Last Change: 11 March, 2016
 # License: Vim License (see :help license)
 # Website: https://github.com/troydm/asyncfinder.vim
 
-import vim, os, threading, fnmatch, random, platform, subprocess, time
+import vim, os, threading, fnmatch, re, random, platform, subprocess, time
 
 try:
     import fcntl, select
@@ -21,6 +21,7 @@ async_grep_prev_pattern = None
 async_prev_mode = None
 async_output = None
 async_grep_output = None
+async_grep_file_output = None
 async_on_windows = platform.system() == 'Windows'
 
 class AsyncOutput:
@@ -240,9 +241,9 @@ def AsyncRefresh():
                 if ('a' in mode or 'f' in mode) and '**' in pattern:
                     speed_mode = False
             if speed_mode:
-                AsyncSearch(mode,pattern,buf_list,mru_file,match_exact,match_camel_case,ignore_dirs,ignore_files)
+                AsyncSearch(async_output,mode,pattern,buf_list,mru_file,match_exact,match_camel_case,ignore_dirs,ignore_files)
             else:
-                t = threading.Thread(target=AsyncSearch, args=(mode,pattern,buf_list,mru_file,match_exact,match_camel_case,ignore_dirs,ignore_files,))
+                t = threading.Thread(target=AsyncSearch, args=(async_output,mode,pattern,buf_list,mru_file,match_exact,match_camel_case,ignore_dirs,ignore_files,))
                 t.daemon = True
                 t.start()
     else:
@@ -264,9 +265,8 @@ def AsyncRefresh():
         if len(output) > 0:
             vim.current.buffer.append(output)
 
-def AsyncSearch(mode,pattern,buf_list, mru_file, match_exact, match_camel_case, ignore_dirs,ignore_files):
-    global async_output, async_on_windows
-    output = async_output
+def AsyncSearch(output,mode,pattern,buf_list, mru_file, match_exact, match_camel_case, ignore_dirs,ignore_files):
+    global async_on_windows
     if output.toExit():
         return
     if async_on_windows:
@@ -349,7 +349,7 @@ def AsyncGrepRefreshI():
     vim.command("call <SID>MoveCursorI()")
 
 def AsyncGrepRefresh():
-    global async_grep_pattern, async_grep_prev_pattern, async_grep_output
+    global async_grep_pattern, async_grep_prev_pattern, async_grep_output, async_grep_file_output
     if len(vim.current.buffer) == 1:
         vim.command("bd!")
         return
@@ -366,6 +366,7 @@ def AsyncGrepRefresh():
         pattern = pattern[:-1]
     async_grep_prev_pattern = pattern
     cmd = vim.eval("s:GrepCmd()")
+    cwd = None
     if len(pattern) > 0:
         # Pattern changed
         if pattern != async_grep_pattern:
@@ -373,11 +374,18 @@ def AsyncGrepRefresh():
             # Remove ouput
             if async_grep_output != None:
                 async_grep_output.exit()
+            if async_grep_file_output != None:
+                async_grep_file_output.exit()
             if len(vim.current.buffer) > 2:
                 vim.current.buffer[2:] = None
             async_grep_output = AsyncOutput() 
+            async_grep_file_output = None
             cwd = vim.eval("getcwd()")
-            t = threading.Thread(target=AsyncGrep, args=(cmd,cwd))
+            t = None
+            if cmd.startswith('builtin'):
+                t = threading.Thread(target=AsyncGrepBuiltin, args=(cmd,cwd))
+            else:
+                t = threading.Thread(target=AsyncGrep, args=(cmd,cwd))
             t.daemon = True
             t.start()
     else:
@@ -388,6 +396,14 @@ def AsyncGrepRefresh():
             async_grep_output.exit()
             async_grep_output = None
     running = async_grep_output != None and not async_grep_output.toExit()
+    if cmd.startswith('builtin'):
+        cmd = 'ignore_files: '+vim.eval("g:asyncfinder_grep_ignore_files")
+        cmd += ' ignore_dirs: '+vim.eval("g:asyncfinder_grep_ignore_dirs")
+        if vim.eval("g:asyncfinder_grep_ignore_case") == 1:
+            cmd += ' ignore_case'
+        if cwd == None:
+            cwd = vim.eval("getcwd()")
+        cmd += ' cwd: '+cwd
     if running:
         dots = '.'*random.randint(1,3)
         dots = dots+' '*(3-len(dots))
@@ -398,6 +414,83 @@ def AsyncGrepRefresh():
         output = async_grep_output.get()
         if len(output) > 0:
             vim.current.buffer.append(output)
+
+
+def AsyncGrepBuiltin(cmd,cwd):
+    global async_grep_output, async_grep_file_output
+    output = async_grep_output
+    if output.toExit():
+        return
+    ignore_case = False
+    cmd = cmd[7:].lstrip()
+    if cmd.startswith('-i'):
+        ignore_case = True
+        cmd = cmd[2:].lstrip()
+    ignore_files =cmd[:cmd.index(']')+1]
+    cmd = cmd[cmd.index(']')+1:].lstrip()
+    ignore_dirs = cmd[:cmd.index(']')+1]
+    cmd = cmd[cmd.index(']')+1:].lstrip()
+    i = 1
+    while cmd[i] != "'" or cmd[i-1] == "\\":
+        i += 1
+    pattern = eval(cmd[:i+1])
+    cwd = cmd[i+1:].lstrip()
+    async_grep_file_output = AsyncOutput()
+    file_output = async_grep_file_output
+    match_exact = vim.eval("g:asyncfinder_match_exact") == '1'
+    match_camel_case = vim.eval("g:asyncfinder_match_camel_case") == '1'
+    buf_list = []
+    mru_file = ""
+    t = threading.Thread(target=AsyncSearch, args=(file_output,'f','**',buf_list,mru_file,match_exact,match_camel_case,ignore_dirs,ignore_files,))
+    t.daemon = True
+    t.start()
+    if pattern.startswith('/') and pattern.endswith('/'):
+        try:
+            if ignore_case:
+                pattern = re.compile(pattern[1:-1],re.IGNORECASE)
+            else:
+                pattern = re.compile(pattern[1:-1])
+        except:
+            pass
+    if type(pattern) == str and ignore_case:
+        pattern = pattern.lower()
+    while not file_output.toExit():
+        files = file_output.get()
+        if len(files) == 0:
+            time.sleep(0.01)
+        else:
+            for f in files:
+                lines = AsyncSearchInFile(f[2:],pattern,cwd,ignore_case)
+                if len(lines) > 0:
+                    output.extend(lines)
+    for f in file_output.get():
+        lines = AsyncSearchInFile(f[2:],pattern,cwd,ignore_case)
+        if len(lines) > 0:
+            output.extend(lines)
+    output.exit()
+
+def AsyncSearchInFile(fn,pattern,cwd,ignore_case):
+    f = None
+    found = []
+    try:
+        fn = os.path.abspath(cwd+os.sep+fn)
+        f = open(fn,'r')
+        if type(pattern) == str:
+            for i, line in enumerate(f):
+                if ignore_case:
+                    line = line.lower()
+                if pattern in line:
+                    found.append(fn+":"+str(i+1)+":"+line)
+        else:
+            for i, line in enumerate(f):
+                if len(re.findall(pattern, line)) > 0:
+                    found.append(fn+":"+str(i+1)+":"+line)
+        return found
+    except:
+        return found
+    finally:
+        if f is not None:
+            f.close()
 
 def AsyncGrep(cmd,cwd):
     global async_grep_output
@@ -453,7 +546,8 @@ def AsyncGrep(cmd,cwd):
         except IOError:
             time.sleep(0.01)
     if len(outread) > 0:
-        outread = outread.split("\n")
+        if type(outread) == str:
+            outread = outread.split("\n")
         if len(outread[-1]) == 0:
             outread = outread[:-1]
         output.extend(outread)
@@ -469,9 +563,12 @@ def AsyncGrep(cmd,cwd):
 
 
 def AsyncGrepCancel():
-    global async_grep_pattern, async_grep_output
+    global async_grep_pattern, async_grep_output, async_grep_file_output
     async_grep_pattern = None
     if async_grep_output != None:
         async_grep_output.exit()
         async_grep_output = None
+    if async_grep_file_output != None:
+        async_grep_file_output.exit()
+        async_grep_file_output = None
 

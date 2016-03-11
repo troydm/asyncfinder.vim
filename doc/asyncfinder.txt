@@ -1,10 +1,10 @@
-asyncfinder.vim for Vim version 7.0+   Last change: 5 September, 2012
+asyncfinder.vim for Vim version 7.0+   Last change: 11 March, 2016
 
 Maintainer: Dmitry "troydm" Geurkov <d.geurkov@gmail.com>
-Version: 0.2.7
+Version: 0.2.8
 Description: asyncfinder.vim is a simple asychronous fuzzy file finder
 that searches for files in background without making you frustuated 
-Last Change: 10 October, 2014
+Last Change: 11 March, 2016
 License: Vim License (see :help license)
 Website: https://github.com/troydm/asyncfinder.vim
 
@@ -98,7 +98,9 @@ g:asyncfinder_speed_mode                    (Default: 1)
 
                                                          *g:asyncfinder_grep_cmd*
 g:asyncfinder_grep_cmd                (Default: "grep")
-    Specifies the grep command to use. ack or ack-grep commands can be used instead.
+    Specifies the |grep| command to use. |ack| or |ack-grep| or |ag| or |builtin| commands can be used instead.
+    Note: |builtin| command behaves differently and is slow compared to other
+    but usefull in enviroments when you don't have grep or other commands available
 
                                                          *g:asyncfinder_grep_open_in_prev_win*
 g:asyncfinder_grep_open_in_prev_win   (Default: 0)
@@ -178,6 +180,8 @@ g:asyncfinder_grep_ignore_files       (Default: "['*.swp']")
     Results are shown under '> ' {pattern} prompt (second line)
     If <Enter> is pressed over matching line it opens the file on the line specified in the match
     To close result window just kill the buffer using |:bd| or press <C-q>
+    Note: when builtin command is used pattern is considered plain text and
+    /pattern/ - a regular expression pattern
 
                                                                   *AsyncGrepTop*
 :AsyncGrepTop[!] [{pattern}]
