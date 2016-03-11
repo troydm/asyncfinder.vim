@@ -17,11 +17,9 @@ endif
 let s:save_cpo = &cpo
 set cpo&vim
 
-syntax match AsyncGrepTitle /^Type your pattern/ 
-syntax match AsyncGrepTitle /^Searching in files\.*/
 syntax match AsyncGrepPattern /^>.*$/
-syntax match AsyncGrepFilename /^\zs\(Searching in files\)\@!\(Type your pattern\)\@![^:]\+\ze:/
-syntax match AsyncGrepLine /\zs\d\+\ze:/
+syntax match AsyncGrepFilename /^\zs[^:]\+\ze:/
+syntax match AsyncGrepLine /^[^:]\+:\zs\d\+\ze:/
 
 highlight default link AsyncGrepTitle    Comment
 highlight default link AsyncGrepPattern  Title

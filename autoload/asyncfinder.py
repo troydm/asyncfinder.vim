@@ -195,18 +195,15 @@ def AsyncRefreshI():
 
 def AsyncRefresh():
     global async_pattern, async_prev_pattern, async_prev_mode, async_output
-    if len(vim.current.buffer) == 1:
-        vim.command("bd!")
-        return
     # detect quit
-    cl = len(vim.current.buffer[1])
+    cl = len(vim.current.buffer[0])
     if cl < 2:
         vim.command("bd!")
         return
     elif cl < 3:
-        vim.current.buffer[1] = '>  '
+        vim.current.buffer[0] = '>  '
     mode = vim.eval("getbufvar('%','asyncfinder_mode')")
-    pattern = vim.current.buffer[1]
+    pattern = vim.current.buffer[0]
     pattern = pattern[2:].strip()
     async_prev_pattern = pattern
     async_prev_mode = mode
@@ -217,8 +214,8 @@ def AsyncRefresh():
         # Pattern changed
         if pattern != async_pattern:
             # Remove ouput
-            if len(vim.current.buffer) > 2:
-                vim.current.buffer[2:] = None
+            if len(vim.current.buffer) > 1:
+                vim.current.buffer[1:] = None
             if async_output != None:
                 async_output.exit()
             async_output = AsyncOutput() 
@@ -247,19 +244,22 @@ def AsyncRefresh():
                 t.daemon = True
                 t.start()
     else:
-        if len(vim.current.buffer) > 2:
-            vim.current.buffer[2:] = None
+        if len(vim.current.buffer) > 1:
+            vim.current.buffer[1:] = None
         async_pattern = None
         if async_output != None:
             async_output.exit()
             async_output = None
     running = async_output != None and not async_output.toExit()
+    status = None
+    status_mode='(%#AsyncFinderTitle#mode:%* '+mode+' %#AsyncFinderTitle#cwd:%* '+os.getcwd()+')'
     if running:
         dots = '.'*random.randint(1,3)
         dots = dots+' '*(3-len(dots))
-        vim.current.buffer[0] = 'Searching files'+dots+' (mode: '+mode+' cwd: '+os.getcwd()+')'
+        status = '%#AsyncFinderTitle#Searching files'+dots+'%*'+status_mode
     else:
-        vim.current.buffer[0] = 'Type your pattern  (mode: '+mode+' cwd: '+os.getcwd()+')' 
+        status = '%#AsyncFinderTitle#Type your pattern%* '+status_mode
+    vim.eval("s:SetStatus('"+status.replace("'","''")+"')")
     if async_output != None:
         output = async_output.get()
         if len(output) > 0:
@@ -350,17 +350,14 @@ def AsyncGrepRefreshI():
 
 def AsyncGrepRefresh():
     global async_grep_pattern, async_grep_prev_pattern, async_grep_output, async_grep_file_output
-    if len(vim.current.buffer) == 1:
-        vim.command("bd!")
-        return
     # detect quit
-    cl = len(vim.current.buffer[1])
+    cl = len(vim.current.buffer[0])
     if cl < 2:
         vim.command("bd!")
         return
     elif cl < 3:
-        vim.current.buffer[1] = '>  '
-    pattern = vim.current.buffer[1]
+        vim.current.buffer[0] = '>  '
+    pattern = vim.current.buffer[0]
     pattern = pattern[2:]
     if pattern[-1] == ' ':
         pattern = pattern[:-1]
@@ -376,8 +373,8 @@ def AsyncGrepRefresh():
                 async_grep_output.exit()
             if async_grep_file_output != None:
                 async_grep_file_output.exit()
-            if len(vim.current.buffer) > 2:
-                vim.current.buffer[2:] = None
+            if len(vim.current.buffer) > 1:
+                vim.current.buffer[1:] = None
             async_grep_output = AsyncOutput() 
             async_grep_file_output = None
             cwd = vim.eval("getcwd()")
@@ -389,8 +386,8 @@ def AsyncGrepRefresh():
             t.daemon = True
             t.start()
     else:
-        if len(vim.current.buffer) > 2:
-            vim.current.buffer[2:] = None
+        if len(vim.current.buffer) > 1:
+            vim.current.buffer[1:] = None
         async_grep_pattern = None
         if async_grep_output != None:
             async_grep_output.exit()
@@ -404,12 +401,14 @@ def AsyncGrepRefresh():
         if cwd == None:
             cwd = vim.eval("getcwd()")
         cmd += ' cwd: '+cwd
+    status = None
     if running:
         dots = '.'*random.randint(1,3)
         dots = dots+' '*(3-len(dots))
-        vim.current.buffer[0] = 'Searching in files'+dots+'('+cmd+')'
+        status = '%#AsyncGrepTitle#Searching files'+dots+'%*('+cmd+')'
     else:
-        vim.current.buffer[0] = 'Type your pattern  ('+cmd+')' 
+        status = '%#AsyncGrepTitle#Type your pattern%* ('+cmd+')' 
+    vim.eval("s:SetStatus('"+status.replace("'","''")+"')")
     if async_grep_output != None:
         output = async_grep_output.get()
         if len(output) > 0:
@@ -558,8 +557,6 @@ def AsyncGrep(cmd,cwd):
         p.terminate()
     except OSError:
         pass
-
-
 
 
 def AsyncGrepCancel():

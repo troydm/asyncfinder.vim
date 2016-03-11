@@ -44,24 +44,24 @@ function! s:Clear()
     endif
 endfunction
 function! s:ClearPrompt()
-    call setline(2,'>  ')
+    call setline(1,'>  ')
 endfunction
 function! s:Edit()
     let f = ''
     let p = getpos('.')
-    if p[1] == 2
-        if line('$') == 3
-            let f = getline(3)
+    if p[1] == 1
+        if line('$') == 2
+            let f = getline(2)
         endif
     else
-        if p[1] > 2
+        if p[1] > 1
             let f = getline(p[1])
         endif
     endif
     if !empty(f)
         if f[0] == 'd' && f[1] == ' '
-            call setline(2,"> ".f[2:].s:path_sep)
-            call feedkeys("ggjA")
+            call setline(1,"> ".f[2:].s:path_sep)
+            call feedkeys("ggA")
             call s:Clear()
         endif
         if (f[0] == 'f' || f[0] == 'b' || f[0] == 'm') && f[1] == ' ' 
@@ -83,20 +83,16 @@ endfunction
 function! s:EnterPressed()
     let p = getpos('.')
     if p[1] == 1
-        startinsert
-        return
-    endif
-    if p[1] == 2
-        let t = getline(3)
+        let t = getline(2)
         if !empty(t) 
             if t[0] == 'd'
-                call setline(2,"> ".t[2:].s:path_sep)
+                call setline(1,"> ".t[2:].s:path_sep)
                 call feedkeys("$a")
                 call s:Clear()
                 return
             endif
             if g:asyncfinder_edit_file_on_single_result && (t[0] == 'f' || t[0] == 'b' || t[0] == 'm')
-                if line('$') == 3
+                if line('$') == 2
                     call s:Edit()
                     return
                 endif
@@ -105,7 +101,7 @@ function! s:EnterPressed()
         startinsert
         return
     endif
-    if p[1] > 2
+    if p[1] > 1
         call s:Edit()
     endif
 endfunction
@@ -122,7 +118,7 @@ function! s:EnterPressedGrep()
         return
     endif
     let ln = getpos('.')[1]
-    if ln > 2
+    if ln > 1
         let line = getline(ln)
         let mln = matchstr(line, "\\d\\+:")
         if mln != ''
@@ -143,7 +139,7 @@ function! s:EnterPressedGrep()
 endfunction
 function! s:CursorInPrompt()
     let p = getpos('.')
-    return p[1] == 2 && p[2] > 2
+    return p[1] == 1 && p[2] > 2
 endfunction
 function! s:BackspacePressed()
     if s:CursorInPrompt()
@@ -170,15 +166,14 @@ function! s:CharTyped()
 endfunction
 function! s:PositionCursor()
     let p = getpos('.')
-    if p[1] == 1 || (p[1] == 2 && p[2] < 3) || p[1] > 2
-        normal! ggjA
+    if (p[1] == 1 && p[2] < 3) || p[1] > 1
+        normal! ggA
     endif
     " to prevent position reset after InsertEnter autocommand is triggered
     let v:char = '.'
 endfunction
 function! s:ChangeMode()
     let mode = getbufvar('%','asyncfinder_mode')
-    let moder = '1s/mode: '.mode.' /mode: '
     if mode == 'a'
         if g:asyncfinder_include_buffers
             let mode = 'b'
@@ -197,20 +192,16 @@ function! s:ChangeMode()
         let mode = 'a'
     endif
     call setbufvar('%','asyncfinder_mode',mode)
-    let moder .= mode.' '
-    let pos = getpos('.')
-    exe moder
-    call setpos('.',pos)
     python asyncfinder.AsyncCancel()
 endfunction
 function! s:ChangeModeTo(mode)
     if a:mode == 'a' || a:mode == 'b' || a:mode == 'f' || a:mode =='m' 
         let mode = getbufvar('%','asyncfinder_mode')
-        let moder = '1s/mode: '.mode.' /mode: '
         call setbufvar('%','asyncfinder_mode',a:mode)
-        let moder .= a:mode.' '
-        exe moder
     endif
+endfunction
+function! s:SetStatus(status)
+    let &l:statusline=a:status
 endfunction
 function! s:StrEndsWith(s,e)
     return a:s[len(a:s)-len(a:e) : len(a:s)-1] == a:e
@@ -259,7 +250,7 @@ function! s:GrepCmd()
     endif
 endfunction
 function! s:GrepPattern()
-    let pattern = getline(2)[2:]
+    let pattern = getline(1)[2:]
     if pattern[len(pattern)-1] == ' '
         let pattern = pattern[:-2]
     endif
@@ -276,7 +267,7 @@ function! asyncfinder#OpenWindow(bang,win,pattern)
         call setbufvar("%","prevwinnr",winnr('#'))
         call setbufvar("%","prevupdatetime",&updatetime)
         call setbufvar("%","asyncfinder_mode",g:asyncfinder_initial_mode)
-        call setline(1, 'Type your pattern  (mode: '.g:asyncfinder_initial_mode.' cwd: '.getcwd().')')
+        call s:SetStatus('Type your pattern (mode: '.g:asyncfinder_initial_mode.' cwd: '.getcwd().')')
         call s:ClearPrompt()
         set updatetime=250
         au BufEnter <buffer> set updatetime=250
@@ -354,9 +345,9 @@ function! asyncfinder#OpenGrepWindow(bang,win,pattern)
                 let s .= ' ignore_case'
             endif
             let s .= ' cwd: '.getcwd()
-            call setline(1, 'Type your pattern  ('.s.')')
+            call s:SetStatus('Type your pattern ('.s.')')
         else
-            call setline(1, 'Type your pattern  ('.s:GrepCmd().')')
+            call s:SetStatus('Type your pattern ('.s:GrepCmd().')')
         endif
         call s:ClearPrompt()
         set updatetime=250
