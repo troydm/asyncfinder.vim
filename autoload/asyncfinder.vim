@@ -120,12 +120,12 @@ function! s:EnterPressedGrep()
     let ln = getpos('.')[1]
     if ln > 1
         let line = getline(ln)
-        let mln = matchstr(line, "\\d\\+:")
+        let mln = matchstr(line, ":\\d\\+:")
         if mln != ''
           let mfn = ''
-          let mln = mln[:-2]
-          let i = match(line, "\\d\\+:")
-          let mfn = line[:i-2]
+          let mln = mln[1:-2]
+          let i = match(line, ":\\d\\+:")
+          let mfn = line[:i-1]
           if filereadable(mfn)
               if g:asyncfinder_grep_open_in_prev_win
                   exe b:prevwinnr.'wincmd w'
