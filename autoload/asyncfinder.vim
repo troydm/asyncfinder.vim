@@ -263,7 +263,7 @@ function! asyncfinder#OpenWindow(bang,win,pattern)
     let winnr = bufwinnr('^asyncfinder$')
     if winnr < 0
         execute a:win.(&lines/3).'sp asyncfinder'
-        setlocal filetype=asyncfinder buftype=nofile bufhidden=wipe nobuflisted noswapfile nonumber nowrap
+        setlocal filetype=asyncfinder buftype=nofile bufhidden=wipe nolist nobuflisted noswapfile nonumber nowrap
         call setbufvar("%","prevwinnr",winnr('#'))
         call setbufvar("%","prevupdatetime",&updatetime)
         call setbufvar("%","asyncfinder_mode",g:asyncfinder_initial_mode)
@@ -335,7 +335,7 @@ function! asyncfinder#OpenGrepWindow(bang,win,pattern)
     let winnr = bufwinnr('^asyncgrep$')
     if winnr < 0
         execute a:win.(&lines/3).'sp asyncgrep'
-        setlocal filetype=asyncgrep buftype=nofile bufhidden=wipe nobuflisted noswapfile nonumber nowrap
+        setlocal filetype=asyncgrep buftype=nofile bufhidden=wipe nolist nobuflisted noswapfile nonumber nowrap
         call setbufvar("%","prevwinnr",winnr('#'))
         call setbufvar("%","prevupdatetime",&updatetime)
         if g:asyncfinder_grep_cmd == 'builtin'
