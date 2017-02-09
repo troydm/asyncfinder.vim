@@ -221,7 +221,6 @@ function! s:GrepCmd()
         return g:asyncfinder_grep_cmd.' '.options.' '''.pattern.''' '.getcwd()
     elseif s:StrEndsWith(g:asyncfinder_grep_cmd,'ack') || s:StrEndsWith(g:asyncfinder_grep_cmd,'ack-grep')
         " ack command
-        let options .= ' -a'
         for d in eval(g:asyncfinder_grep_ignore_dirs)
             let options .= ' --ignore-dir='.d
         endfor
