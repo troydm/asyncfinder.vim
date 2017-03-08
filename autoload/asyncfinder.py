@@ -3,11 +3,11 @@
 # Version: 0.2.8
 # Description: asyncfinder.vim is a simple asychronous fuzzy file finder
 # that searches for files in background without making you frustuated 
-# Last Change: 11 March, 2016
+# Last Change: 8 March, 2017
 # License: Vim License (see :help license)
 # Website: https://github.com/troydm/asyncfinder.vim
 
-import vim, os, threading, fnmatch, re, random, platform, subprocess, time
+import vim, os, threading, multiprocessing, Queue, fnmatch, re, random, platform, subprocess, time
 
 try:
     import fcntl, select
@@ -62,6 +62,7 @@ class AsyncGlobber:
     def __init__(self,output):
         self.output = output
         self.dir = None
+        self.dirps = None
         self.case_sensitive = False
         self.ignore_dirs = []
         self.ignore_files = []
@@ -70,15 +71,15 @@ class AsyncGlobber:
         self.cwd = os.getcwd()+os.path.sep
 
     def addDir(self,p):
-        if p.startswith(self.dir+os.path.sep):
-            p = p[len(self.dir+os.path.sep):] 
+        if p.startswith(self.dirps):
+            p = p[len(self.dirps):] 
         if not p in self.buffers:
             self.output.append("d "+p)
             self.files.append(p)
 
     def addFile(self,p):
-        if p.startswith(self.dir+os.path.sep):
-            p = p[len(self.dir+os.path.sep):] 
+        if p.startswith(self.dirps):
+            p = p[len(self.dirps):] 
         if not p in self.buffers:
             self.output.append("f "+p)
             self.files.append(p)
@@ -131,6 +132,7 @@ class AsyncGlobber:
 
     def glob(self,dir,pattern):
         self.dir = dir
+        self.dirps = self.dir+os.path.sep
         # if no magic specified
         if not self.has_magic(pattern):
             if os.path.exists(os.path.join(dir,pattern)):
@@ -169,21 +171,121 @@ class AsyncGlobber:
         self.walk(pre,post,rec_index != None)
 
     def walk(self,dir, pattern, recurse=True):
+        i = 0
+        walkQueue = None
+        resultQueue = None
+        threads = None
         for root, dirs, files in os.walk(dir):
             if self.output.toExit():
-                break
+                return
             if self.fnmatch_list(root,self.ignore_dirs):
                 continue
+            i += 1
+            if i == 1000:
+                threadsCount = multiprocessing.cpu_count()*2-1
+                walkQueue = Queue.Queue(threadsCount*20)
+                resultQueue = Queue.Queue(threadsCount*20)
+                threads = []
+                for ti in xrange(threadsCount):
+                    t = threading.Thread(target=self.walkThread, args=(walkQueue,resultQueue,pattern))
+                    t.daemon = True
+                    threads.append(t)
+                    t.start()
+            if i >= 1000:
+                while True:
+                    try:
+                        walkQueue.put((root,dirs,files),True,1)
+                        break
+                    except Queue.Full:
+                        if self.output.toExit():
+                            return
+                r = None
+                try:
+                    r = resultQueue.get_nowait()
+                except Queue.Empty:
+                    pass
+                if r != None:
+                    (rdirs,rfiles) = r
+                    for rdir in rdirs:
+                        self.addDir(rdir)
+                    for rfile in rfiles:
+                        self.addFile(rfile)
+            else:
+                dirs[:] = [d for d in dirs if not self.fnmatch_list(d,self.ignore_dirs)]
+                for d in dirs:
+                    if self.fnmatch(os.path.join(root,d),pattern):
+                        self.addDir(os.path.join(root,d))
+                for f in files:
+                    if self.fnmatch(os.path.join(root,f),pattern):
+                        if not self.fnmatch_list(f,self.ignore_files):
+                            self.addFile(os.path.join(root,f))
+                if not recurse:
+                    return
+        if walkQueue == None:
+            return
+        while not resultQueue.empty():
+            if self.output.toExit():
+                return
+            r = None
+            try:
+                r = resultQueue.get_nowait()
+            except Queue.Empty:
+                pass
+            if r != None:
+                (rdirs,rfiles) = r
+                for rdir in rdirs:
+                    self.addDir(rdir)
+                for rfile in rfiles:
+                    self.addFile(rfile)
+        walkQueue.join()
+        while not resultQueue.empty():
+            if self.output.toExit():
+                return
+            r = None
+            try:
+                r = resultQueue.get_nowait()
+            except Queue.Empty:
+                pass
+            if r != None:
+                (rdirs,rfiles) = r
+                for rdir in rdirs:
+                    self.addDir(rdir)
+                for rfile in rfiles:
+                    self.addFile(rfile)
+
+    def walkThread(self,walkQueue,resultQueue,pattern):
+        while True:
+            if self.output.toExit():
+                return
+            t = None
+            try:
+                t = walkQueue.get_nowait()
+            except Queue.Empty:
+                pass
+            if t == None:
+                time.sleep(0.01)
+                continue
+            (root,dirs,files) = t
+            rdirs = []
+            rfiles = []
             dirs[:] = [d for d in dirs if not self.fnmatch_list(d,self.ignore_dirs)]
             for d in dirs:
                 if self.fnmatch(os.path.join(root,d),pattern):
-                    self.addDir(os.path.join(root,d))
+                    rdirs.append(os.path.join(root,d))
             for f in files:
                 if self.fnmatch(os.path.join(root,f),pattern):
                     if not self.fnmatch_list(f,self.ignore_files):
-                        self.addFile(os.path.join(root,f))
-            if not recurse:
-                break
+                        rfiles.append(os.path.join(root,f))
+            if len(rdirs) > 0 or len(rfiles) > 0:
+                while True:
+                    try:
+                        resultQueue.put((rdirs,rfiles),True,1)
+                        break
+                    except Queue.Full:
+                        if self.output.toExit():
+                            return
+            walkQueue.task_done()
+
 
 def AsyncRefreshN():
     AsyncRefresh()
