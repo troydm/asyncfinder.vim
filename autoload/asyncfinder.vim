@@ -70,7 +70,7 @@ function! s:Edit()
             else
                 silent! bd!
             endif
-            exe ':e '.f[2:]
+            exe ':e '.escape(f[2:], ' \')
         endif
     endif
 endfunction
