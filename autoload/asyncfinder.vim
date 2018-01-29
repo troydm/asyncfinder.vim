@@ -224,7 +224,8 @@ function! s:GrepCmd()
         for d in eval(g:asyncfinder_grep_ignore_dirs)
             let options .= ' --ignore-dir='.d
         endfor
-        return g:asyncfinder_grep_cmd.options.' '''.s:GrepPattern().''' '.getcwd()
+        let pattern = substitute(s:GrepPattern(),"'","'\"'\"'",'g')
+        return g:asyncfinder_grep_cmd.options.' '''.pattern.''' '.getcwd()
     elseif s:StrEndsWith(g:asyncfinder_grep_cmd,'ag')
         " ag command
         if !g:asyncfinder_grep_ignore_case
@@ -236,7 +237,8 @@ function! s:GrepCmd()
         for d in eval(g:asyncfinder_grep_ignore_dirs)
             let options .= ' --ignore '.d
         endfor
-        return g:asyncfinder_grep_cmd.options.' '''.s:GrepPattern().''' '.getcwd()
+        let pattern = substitute(s:GrepPattern(),"'","'\"'\"'",'g')
+        return g:asyncfinder_grep_cmd.options.' '''.pattern.''' '.getcwd()
     else
         " grep command
         for f in eval(g:asyncfinder_grep_ignore_files)
@@ -245,7 +247,8 @@ function! s:GrepCmd()
         for d in eval(g:asyncfinder_grep_ignore_dirs)
             let options .= ' --exclude-dir='.d
         endfor
-        return g:asyncfinder_grep_cmd.' -n -r'.options.' -e '''.s:GrepPattern().''' '.getcwd()
+        let pattern = substitute(s:GrepPattern(),"'","'\"'\"'",'g')
+        return g:asyncfinder_grep_cmd.' -n -r'.options.' -e '''.pattern.''' '.getcwd()
     endif
 endfunction
 function! s:GrepPattern()
