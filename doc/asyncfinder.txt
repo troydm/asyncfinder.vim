@@ -1,10 +1,10 @@
-asyncfinder.vim for Vim version 7.0+   Last change: 11 March, 2016
+asyncfinder.vim for Vim version 7.0+   Last change: 7 November, 2020
 
 Maintainer: Dmitry "troydm" Geurkov <d.geurkov@gmail.com>
-Version: 0.2.8
+Version: 0.2.9
 Description: asyncfinder.vim is a simple asychronous fuzzy file finder
 that searches for files in background without making you frustuated 
-Last Change: 11 March, 2016
+Last Change: 7 November, 2020
 License: Vim License (see :help license)
 Website: https://github.com/troydm/asyncfinder.vim
 
@@ -35,6 +35,10 @@ Requirements:
 
 ============================================================================================
  2. CONFIGURATION                                        *asyncfinder.vim-configuration*
+
+                                                         *g:asyncfinder_use_python2*
+g:asyncfinder_use_python2 (Default: 0)
+    Force |asyncfinder| to use Python 2 even if Python 3 is available
 
                                                          *g:asyncfinder_open_in_prev_win*
 g:asyncfinder_open_in_prev_win (Default: 0)

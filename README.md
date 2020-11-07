@@ -16,6 +16,7 @@ screenshot
 
 usage
 -----
+You need to have vim compiled with either +python3 or +python support.
 
     :AsyncFinder - search for filename
     :AsyncGrep - search for pattern in files recursively

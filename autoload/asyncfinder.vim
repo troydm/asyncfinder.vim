@@ -1,24 +1,43 @@
 " asyncfinder.vim - simple asynchronous fuzzy file finder for vim
 " Maintainer: Dmitry "troydm" Geurkov <d.geurkov@gmail.com>
-" Version: 0.2.8
+" Version: 0.2.9
 " Description: asyncfinder.vim is a simple asychronous fuzzy file finder
 " that searches for files in background without making you frustuated 
-" Last Change: 11 March, 2016
+" Last Change: 7 November, 2020
 " License: Vim License (see :help license)
 " Website: https://github.com/troydm/asyncfinder.vim
 "
 " See asyncfinder.vim for help.  This can be accessed by doing:
 " :help asyncfinder
 
+" check if +python3 or +python is available
+if !((!g:asyncfinder_use_python2 && has("python3")) || has("python"))
+    echo "asyncfinder needs vim compiled with +python3 or +python option"
+    finish
+endif
+" }}}
+
+
 " load python module {{{
-python << EOF
+if has('python3')
+    python3 << EOF
 import vim, sys
-asyncfinder_path = vim.eval("expand('<sfile>:h')")
+asyncfinder_path = vim.eval("expand('<sfile>:h')") + '/py3'
 if not asyncfinder_path in sys.path:
     sys.path.insert(0, asyncfinder_path)
 del asyncfinder_path 
 import asyncfinder
 EOF
+else
+    python << EOF
+import vim, sys
+asyncfinder_path = vim.eval("expand('<sfile>:h')") + '/py2'
+if not asyncfinder_path in sys.path:
+    sys.path.insert(0, asyncfinder_path)
+del asyncfinder_path 
+import asyncfinder
+EOF
+endif
 " }}}
 
 " variables {{{
@@ -192,7 +211,7 @@ function! s:ChangeMode()
         let mode = 'a'
     endif
     call setbufvar('%','asyncfinder_mode',mode)
-    python asyncfinder.AsyncCancel()
+    pythonx asyncfinder.AsyncCancel()
 endfunction
 function! s:ChangeModeTo(mode)
     if a:mode == 'a' || a:mode == 'b' || a:mode == 'f' || a:mode =='m' 
@@ -273,11 +292,11 @@ function! asyncfinder#OpenWindow(bang,win,pattern)
         call s:ClearPrompt()
         set updatetime=250
         au BufEnter <buffer> set updatetime=250
-        au BufWipeout <buffer> python asyncfinder.AsyncCancel()
+        au BufWipeout <buffer> pythonx asyncfinder.AsyncCancel()
         au BufLeave <buffer> let &updatetime=getbufvar('%','prevupdatetime')
         au InsertEnter <buffer> call s:PositionCursor()
-        au CursorHold <buffer> python asyncfinder.AsyncRefreshN()
-        au CursorHoldI <buffer> python asyncfinder.AsyncRefreshI()
+        au CursorHold <buffer> pythonx asyncfinder.AsyncRefreshN()
+        au CursorHoldI <buffer> pythonx asyncfinder.AsyncRefreshI()
         au InsertCharPre <buffer> call <SID>CharTyped()
         inoremap <buffer> <CR> <ESC>:call <SID>EnterPressedI()<CR>
         inoremap <buffer> <BS> <ESC>:call <SID>BackspacePressed() \| startinsert<CR>
@@ -290,8 +309,8 @@ function! asyncfinder#OpenWindow(bang,win,pattern)
         startinsert
         let pattern = a:pattern
         if a:bang == '!'
-            let pattern = pyeval('asyncfinder.async_prev_pattern')
-            let mode = pyeval('asyncfinder.async_prev_mode')
+            let pattern = pyxeval('asyncfinder.async_prev_pattern')
+            let mode = pyxeval('asyncfinder.async_prev_mode')
             if mode != g:asyncfinder_initial_mode
                 let pattern = '-mode='.mode.' '.pattern
             endif
@@ -303,10 +322,10 @@ function! asyncfinder#OpenWindow(bang,win,pattern)
         endif
         if !empty(pattern)
             call feedkeys(pattern)
-            python asyncfinder.AsyncRefreshI()
+            pythonx asyncfinder.AsyncRefreshI()
         elseif !empty(g:asyncfinder_initial_pattern)
             call feedkeys(g:asyncfinder_initial_pattern)
-            python asyncfinder.AsyncRefreshI()
+            pythonx asyncfinder.AsyncRefreshI()
         endif
     else
         exe winnr . 'wincmd w'
@@ -320,15 +339,15 @@ function! asyncfinder#OpenWindow(bang,win,pattern)
             let pattern = substitute(pattern, '\s*-mode=\?[abfm]\?\s*','','')
         endif
         if a:bang == '!'
-            let pattern = pyeval('asyncfinder.async_prev_pattern')
+            let pattern = pyxeval('asyncfinder.async_prev_pattern')
         endif
         if !empty(pattern)
             call feedkeys(pattern)
-            python asyncfinder.AsyncRefreshI()
+            pythonx asyncfinder.AsyncRefreshI()
         else
-            let pattern = pyeval('asyncfinder.async_prev_pattern')
+            let pattern = pyxeval('asyncfinder.async_prev_pattern')
             call feedkeys(pattern)
-            python asyncfinder.AsyncRefreshI()
+            pythonx asyncfinder.AsyncRefreshI()
         endif
     endif
 endfunction
@@ -354,11 +373,11 @@ function! asyncfinder#OpenGrepWindow(bang,win,pattern)
         call s:ClearPrompt()
         set updatetime=250
         au BufEnter <buffer> set updatetime=250
-        au BufWipeout <buffer> python asyncfinder.AsyncGrepCancel()
+        au BufWipeout <buffer> pythonx asyncfinder.AsyncGrepCancel()
         au BufLeave <buffer> let &updatetime=getbufvar('%','prevupdatetime')
         au InsertEnter <buffer> call s:PositionCursor()
-        au CursorHold <buffer> python asyncfinder.AsyncGrepRefreshN()
-        au CursorHoldI <buffer> python asyncfinder.AsyncGrepRefreshI()
+        au CursorHold <buffer> pythonx asyncfinder.AsyncGrepRefreshN()
+        au CursorHoldI <buffer> pythonx asyncfinder.AsyncGrepRefreshI()
         au InsertCharPre <buffer> call <SID>CharTyped()
         inoremap <buffer> <CR> <ESC>:call <SID>EnterPressedGrepI()<CR>
         inoremap <buffer> <BS> <ESC>:call <SID>BackspacePressed() \| startinsert<CR>
@@ -368,14 +387,14 @@ function! asyncfinder#OpenGrepWindow(bang,win,pattern)
         startinsert
         let pattern = a:pattern
         if a:bang == '!'
-            let pattern = pyeval('asyncfinder.async_grep_prev_pattern')
+            let pattern = pyxeval('asyncfinder.async_grep_prev_pattern')
         endif
         if !empty(pattern)
             call feedkeys(pattern)
-            python asyncfinder.AsyncGrepRefreshI()
+            pythonx asyncfinder.AsyncGrepRefreshI()
         elseif !empty(g:asyncfinder_grep_initial_pattern)
             call feedkeys(g:asyncfinder_grep_initial_pattern)
-            python asyncfinder.AsyncGrepRefreshI()
+            pythonx asyncfinder.AsyncGrepRefreshI()
         endif
     else
         exe winnr . 'wincmd w'
@@ -384,11 +403,11 @@ function! asyncfinder#OpenGrepWindow(bang,win,pattern)
         startinsert
         let pattern = a:pattern
         if a:bang == '!'
-            let pattern = pyeval('asyncfinder.async_grep_prev_pattern')
+            let pattern = pyxeval('asyncfinder.async_grep_prev_pattern')
         endif
         if !empty(pattern)
             call feedkeys(pattern)
-            python asyncfinder.AsyncGrepRefreshI()
+            pythonx asyncfinder.AsyncGrepRefreshI()
         endif
     endif
 endfunction
