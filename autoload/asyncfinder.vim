@@ -19,7 +19,7 @@ endif
 
 
 " load python module {{{
-if has('python3')
+if has('python3') && !g:asyncfinder_use_python2
     python3 << EOF
 import vim, sys
 asyncfinder_path = vim.eval("expand('<sfile>:h')") + '/py3'
